@@ -1,14 +1,32 @@
-# moomoo 域名列表
-# 20260320
-# 来源于：https://github.com/MetaCubeX/meta-rules-dat/blob/meta/geo/geosite/futu.list
-+.futufin.com
-+.futuhk.com
-+.futuhkapp.com
-+.futuhn.com
-+.futuholdings.com
+# 【名称】：Moomoo 国际站规则集
+# 【更新】：2026-03-20
+
+# --- 来源一：MetaCubeX 官方基础库 ---
+# 涵盖 Moomoo 主站及股权、信托管理
 +.moomoo.com
 +.moomooequity.com
 +.moomootrustee.com
-+.futuesop.com
-+.futuniuniu.com
+
+# --- 来源二：Gemini 整理 & 流量嗅探  ---
+# 核心数据接口与全球多地区入口，确保分站不报错
++.moomoo-api.com
++.moomoo.jp
++.moomoo.com.sg
++.moomoo.com.au
++.moomoo.ca
++.moomoo.my
++.moomoo.io
++.moomooapp.com
++.moomoobull.com
++.moomoocdn.com
+
+# --- 来源三：环境模拟与社交增强 ---
+# 关键：futustatic 负责环境检测，放代理可绕过 IP 归属地识别
 +.futustatic.com
++.futu-static.com
++.futuip.com
++.futusns.com
++.futuimg.com
++.futunnq.com
++.futuholdings.com
++.futuholding.com
