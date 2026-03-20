@@ -1,27 +1,17 @@
-# 【名称】：富途牛牛 / 国内规则集
-# 【更新】：2026-03-20
-
 payload:
-  # --- 来源：MetaCubeX (futu@cn 子集) [cite: 2] ---
-  - '+.futunn.com'
-  - '+.futuniuniu.com'
-  - '+.futuesop.com'
-
-  # --- 来源：v2fly (@cn 属性标识) [cite: 3] ---
-  - '+.futuhk.com'
-  - '+.futuhkapp.com'
-  - '+.futufin.com'
-  - '+.futuhn.com'
-
-  # --- 来源：Gemini 整理补充  ---
-  - '+.futunn.cn'
-  - '+.futu5.com'
-  - '+.futu8.com'
-  - '+.futu88.com'
-  - '+.futunnapp.com'
-  - '+.futu-api.com'
-
-  # --- 来源：国内 CDN 加速与云服务 ---
-  - '+.ftimg.com'
-  - '+.futuyun.com'
+    - +.futunn.com
+    - +.futuniuniu.com
+    - +.futuesop.com
+    - +.futuhk.com
+    - +.futuhkapp.com
+    - +.futufin.com
+    - +.futuhn.com
+    - +.futunn.cn
+    - +.futu5.com
+    - +.futu8.com
+    - +.futu88.com
+    - +.futunnapp.com
+    - +.futu-api.com
+    - +.ftimg.com
+    - +.futuyun.com
 
