@@ -1,0 +1,31 @@
+# 【名称】：Moomoo 国际站规则集
+# 【更新】：2026-03-20
+
+payload:
+  # --- 来源：MetaCubeX 官方基础库 ---
+  - '+.moomoo.com'
+  - '+.moomooequity.com'
+  - '+.moomootrustee.com'
+
+  # --- 来源：Gemini 整理 & 流量嗅探  ---
+  - '+.moomoo-api.com'
+  - '+.moomoo.jp'
+  - '+.moomoo.com.sg'
+  - '+.moomoo.com.au'
+  - '+.moomoo.ca'
+  - '+.moomoo.my'
+  - '+.moomoo.io'
+  - '+.moomooapp.com'
+  - '+.moomoobull.com'
+  - '+.moomoocdn.com'
+
+  # --- 来源：环境模拟与社交增强  ---
+  - '+.futustatic.com'
+  - '+.futu-static.com'
+  - '+.futuip.com'
+  - '+.futusns.com'
+  - '+.futuimg.com'
+  - '+.futunnq.com'
+  - '+.futuholdings.com'
+  - '+.futuholding.com'
+
