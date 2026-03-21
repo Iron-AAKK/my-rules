@@ -1,1 +1,61 @@
+name: 核心券商自动流 (Futu & Moomoo)
+on:
+  schedule:
+    - cron: '0 17 * * 5' 
+  workflow_dispatch:
 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装编译器
+        run: |
+          curl -Lo sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.11.0/sing-box-1.11.0-linux-amd64.tar.gz
+          tar -xzf sing-box.tar.gz && cp sing-box-*/sing-box ./ && chmod +x sing-box
+
+      - name: 生产核心地基 (保底+增量)
+        run: |
+          process_core() {
+            local name=$1
+            local sources=$2
+            local manual=$3
+            mkdir -p temp
+            # 1. 注入昨晚 (03-20) 最准的保底清单
+            echo "$manual" | tr ',' '\n' > temp/raw
+            # 2. 追加大佬源做增量同步
+            for url in $sources; do
+              curl -sL --retry 3 --fail "$url" >> temp/raw || echo "跳过失效源: $url"
+            done
+            # 3. 强效清洗：提取域名并统一加前缀 +.
+            grep -oE "([a-zA-Z0-9][-a-zA-Z0-9]*\.)+[a-zA-Z]{2,}" temp/raw | \
+            grep -ivE "404|notfound|github|html" | sort -u | sed 's/^/+./' > ${name}.list
+            # 4. 生成 YAML
+            echo "payload:" > ${name}.yaml && sed 's/^/  - /' ${name}.list >> ${name}.yaml
+            # 5. 编译 SRS (去掉前缀进行编译)
+            echo '{"version":1,"rules":[{"domain_suffix":[' > temp/m.json
+            sed 's/^\+\.//' ${name}.list | sed 's/^/"/;s/$/",/' | sed '$ s/,$//' >> temp/m.json
+            echo ']}]}' >> temp/m.json
+            ./sing-box rule-set compile temp/m.json -o ${name}.srs
+            rm -rf temp
+          }
+
+          # 富途 (Futu)
+          process_core "futu" \
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/futu@cn.yaml https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/master/geosite/futu.txt" \
+            "futunn.com,futuniuniu.com,futuesop.com,futuhk.com,futuhkapp.com,futufin.com,futuhn.com,futunn.cn,futu5.com,futu8.com,futu88.com,futunnapp.com,futu-api.com,ftimg.com,futuyun.com"
+
+          # Moomoo
+          process_core "moomoo" \
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/moomoo.yaml" \
+            "moomoo.com,moomooequity.com,moomootrustee.com,moomoo-api.com,moomoo.jp,moomoo.com.sg,moomoo.com.au,moomoo.ca,moomoo.my,moomoo.io,moomooapp.com,moomoobull.com,moomoocdn.com,futustatic.com,futu-static.com,futuip.com,futusns.com,futuimg.com,futunnq.com,futuholdings.com,futuholding.com"
+
+      - name: 推送核心规则
+        run: |
+          git config --global user.name "Futu-Moomoo-Bot"
+          git config --global user.email "bot@github.com"
+          git add futu.* moomoo.*
+          git commit -m "初心回归：Futu & Moomoo 核心锁定更新 [$(date +'%Y-%m-%d')]" || exit 0
+          git push origin main
