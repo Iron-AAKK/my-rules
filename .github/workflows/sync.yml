@@ -1,28 +1,109 @@
-name: 仓库大扫除 (一键清空旧文件)
-on: 
-  workflow_dispatch: # 手动触发
+name: 自动编译自定义规则
+on:
+  schedule:
+    - cron: '0 17 * * 5' # 北京时间周六凌晨 01:00 运行
+  workflow_dispatch:
 
 jobs:
-  cleanup:
+  build_factory:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: 检出代码
+      - name: 1. 检出仓库代码
         uses: actions/checkout@v4
 
-      - name: 执行强力清理
+      - name: 2. 安装 Sing-box 编译器
         run: |
-          # 删除所有 .json, .yaml, .list, .srs, .txt 文件
-          # 但保留 .github 文件夹和 README.md
-          find . -maxdepth 1 -type f -name "*.json" -delete
-          find . -maxdepth 1 -type f -name "*.yaml" -delete
-          find . -maxdepth 1 -type f -name "*.list" -delete
-          find . -maxdepth 1 -type f -name "*.srs" -delete
-          find . -maxdepth 1 -type f -name "*.txt" -delete
-          
-          git config --global user.name "Cleanup-Bot"
+          curl -Lo sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.11.0/sing-box-1.11.0-linux-amd64.tar.gz
+          tar -xzf sing-box.tar.gz && cp sing-box-*/sing-box ./
+          chmod +x sing-box
+
+      - name: 3. 生产纯净规则文件
+        run: |
+          # --- 深度扫荡函数：整合致谢名单中的所有大佬源 ---
+          process_rule() {
+            local name=$1
+            local sources=$2
+            local manual_mix=$3
+            
+            mkdir -p temp_dir
+            echo "正在生产: $name (汇聚多源地基)"
+            
+            # 【大佬抓取】循环搜刮所有致谢源
+            for url in $sources; do
+              if [ ! -z "$url" ]; then
+                echo "正在抓取: $url"
+                curl -sL --retry 3 "$url" >> temp_dir/raw_collection || true
+              fi
+            done
+            
+            # 【Gemini 自动抓取】注入各券商官方及备用基石域名
+            echo "$manual_mix" | tr ',' '\n' >> temp_dir/raw_collection
+            
+            # 【清洗地基】强力提取域名并去重
+            grep -hE "([a-zA-Z0-9][-a-zA-Z0-9]*\.)+[a-zA-Z]{2,}" temp_dir/raw_collection | \
+            sed 's/^[[:space:]]*- //' | sed 's/DOMAIN-SUFFIX,//g' | sed 's/DOMAIN,//g' | \
+            sed 's/["'\'']//g' | awk -F',' '{print $1}' | tr -d '\r' | \
+            grep -vE '^#|//' | grep -v '^$' | sort -u > ${name}.list
+            
+            # 生成 YAML & 编译 SRS
+            echo "payload:" > ${name}.yaml && sed 's/^/  - /' ${name}.list >> ${name}.yaml
+            echo '{"version": 1, "rules": [{"domain_suffix": [' > temp_dir/mid.json
+            sed 's/^/"/;s/$/",/' ${name}.list | sed '$ s/,$//' >> temp_dir/mid.json
+            echo ']}]}' >> temp_dir/mid.json
+            ./sing-box rule-set compile temp_dir/mid.json -o ${name}.srs
+            
+            rm -rf temp_dir
+          }
+
+          # --- 生产流水线 (深度整合致谢名单) ---
+
+          # 1. 富途证券 (futu)
+          process_rule "futu" \
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/futu@cn.yaml https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/master/geosite/futu.txt https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Futu/Futu.yaml https://raw.githubusercontent.com/SukkaW/Surge/master/Rules/Custom/Futu.list" \
+            "futunnq.com,futuholdings.com,futustatic.com,futusns.com,futuimg.com,futuup.com,futuhk.com,futunn.com,futu5.com,futu8.com,futu88.com,futunnapp.com,futu-api.com,ftimg.com,futuyun.com"
+
+          # 2. moomoo (富途国际版)
+          process_rule "moomoo" \
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/moomoo.yaml https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Moomoo/Moomoo.yaml" \
+            "moomoo.com,moomooequity.com,moomootrustee.com,moomoo-api.com,moomoo.jp,moomoo.com.sg,moomoo.com.au,moomoo.ca,moomoo.my,moomoo.io,moomooapp.com,moomoobull.com,moomoocdn.com,futustatic.com,futu-static.com,futuip.com,futusns.com,futuimg.com,futunnq.com,futuholding.com,futuhodings.com"
+
+          # 3. 老虎证券 (itiger)
+          process_rule "itiger" \
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/itiger.yaml https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/TigerBrokers/TigerBrokers.yaml https://raw.githubusercontent.com/gaoyifan/v2ray-rules-dat/master/geosite/itiger.txt" \
+            "itiger.com,laohu8.com,tigerbbs.cn,tigerbbs.com,tigerfintech.com,xiaohu8.com,zhijianfengyi.cn,zhijianfengyi.com,itigerup.com,tigerbrokers.com,tradeup.com"
+
+          # 4. 雪盈证券 (snowball-x)
+          process_rule "snowball-x" \
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/snowball@cn.yaml https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/master/geosite/snowball.txt https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Snowball/Snowball.yaml" \
+            "snowball-x.com,zhs.snowball-x.com,snowballsecurities.com"
+
+          # 5. 长桥证券 (longbridge)
+          process_rule "longbridge" \
+            "https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/longbridge https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/longbridge.list" \
+            "longbridge.hk,longbridge.sg,longbridge.com,longportapp.com,longbridge.cloud,longbridge.global,longbridgeapp.com,lbctrl.com,lbkrs.com,wbrks.com"
+
+          # 6. 嘉信理财 (schwab)
+          process_rule "schwab" \
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/schwab.yaml https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Schwab/Schwab.yaml" \
+            "schwab.com,thinkorswim.com,tdameritrade.com,trade.thinkorswim.com"
+
+          # 7. 盈透证券 (ibkr)
+          process_rule "ibkr" \
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ibkr.yaml https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/master/geosite/ibkr.txt" \
+            "interactivebrokers.com,ibkr.com"
+
+          # 8. TradingView
+          process_rule "tradingview" \
+            "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/TradingView/TradingView.yaml https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/tradingview" \
+            "tradingview.com,cn.tradingview.com"
+
+      - name: 4. 自动入库推送
+        run: |
+          git config --global user.name "Rules-Bot"
           git config --global user.email "bot@github.com"
-          git add .
-          git commit -m "🧹 自动大扫除：清理所有旧规则文件" || exit 0
+          rm -f *.json
+          git add *.list *.yaml *.srs
+          git commit -m "深度扫荡版规则更新: [$(date +'%Y-%m-%d')]" || exit 0
           git push origin main
