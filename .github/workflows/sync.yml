@@ -10,56 +10,66 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: 1. 检出代码
+      - name: 1. 检出仓库代码
         uses: actions/checkout@v4
 
-      - name: 2. 下载并安装编译器 (暴力适配版)
+      - name: 2. 安装编译器 (环境加固)
         run: |
           # 下载 Sing-box
           curl -Lo sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.11.0/sing-box-1.11.0-linux-amd64.tar.gz
           tar -xzf sing-box.tar.gz && cp sing-box-*/sing-box ./
           
-          # 下载 Mihomo (改用通杀改名法)
+          # 下载 Mihomo
           curl -Lo mihomo.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.18.10/mihomo-linux-amd64-v1.18.10.gz
-          gunzip mihomo.gz
-          # 这一步是核心：把当前文件夹下所有以 mihomo 开头的大文件改名为 mihomo
+          gunzip -f mihomo.gz
           find . -name "mihomo*" -type f -exec mv {} mihomo \;
           
           chmod +x sing-box mihomo
 
-      - name: 3. 抓取、清洗并编译数据
+      - name: 3. 生产 8 大格式文件 (清洗与编译)
         run: |
-          # 抓取源
+          # 抓取原始情报
           curl -s https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/futu@cn.yaml -o s1.yaml
           curl -s https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Futu.yaml -o s3.yaml
           
-          # --- 处理 Futu 系列 ---
+          # === 处理 FUTU 系列 ===
           grep -hE "^\s+- " s1.yaml s3.yaml | sed 's/^[[:space:]]*- //' | sed 's/["'\'']//g' | tr -d '\r' | grep -v '^$' | sort -u > futu.list
           echo "payload:" > futu.yaml && sed 's/^/  - /' futu.list >> futu.yaml
           echo '{"version": 1, "rules": [{"domain_suffix": [' > futu.json
           sed 's/^/"/;s/$/",/' futu.list | sed '$ s/,$//' >> futu.json
           echo ']}]}' >> futu.json
+          
+          # 编译二进制 (加上 -d . 防止卡死)
           ./sing-box rule-set compile futu.json -o futu.srs
-          ./mihomo rule-set compile futu.json futu.mrs
+          ./mihomo -d . rule-set compile futu.json futu.mrs
 
-          # --- 处理 Moomoo 系列 (带私货) ---
+          # === 处理 MOOMOO 系列 (含私货) ===
           cat <<EOF > moomoo.list
           moomoo.com
           moomoo-api.com
+          moomoocdn.com
           futustatic.com
           futusns.com
           futuimg.com
           futunnq.com
           moomoo.jp
           moomoo.com.sg
+          moomoo.com.au
+          moomoo.ca
+          moomoo.my
           moomootrustee.com
+          futuholdings.com
+          futuholding.com
+          futuip.com
           EOF
           echo "payload:" > moomoo.yaml && sed 's/^/  - /' moomoo.list >> moomoo.yaml
           echo '{"version": 1, "rules": [{"domain_suffix": [' > moomoo.json
           sed 's/^/"/;s/$/",/' moomoo.list | sed '$ s/,$//' >> moomoo.json
           echo ']}]}' >> moomoo.json
+          
+          # 编译二进制 (加上 -d . 防止卡死)
           ./sing-box rule-set compile moomoo.json -o moomoo.srs
-          ./mihomo rule-set compile moomoo.json moomoo.mrs
+          ./mihomo -d . rule-set compile moomoo.json moomoo.mrs
 
       - name: 4. 自动入库推送
         run: |
