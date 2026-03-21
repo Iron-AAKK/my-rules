@@ -1,103 +1,28 @@
-name: 自动编译全券商规则 (LIST/YAML/SRS)
-on:
-  schedule:
-    - cron: '0 17 * * 5' # 北京时间周六凌晨 01:00 运行
-  workflow_dispatch:
+name: 仓库大扫除 (一键清空旧文件)
+on: 
+  workflow_dispatch: # 手动触发
 
 jobs:
-  build_factory:
+  cleanup:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: 1. 检出仓库代码
+      - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 2. 安装 Sing-box 编译器
+      - name: 执行强力清理
         run: |
-          curl -Lo sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.11.0/sing-box-1.11.0-linux-amd64.tar.gz
-          tar -xzf sing-box.tar.gz && cp sing-box-*/sing-box ./
-          chmod +x sing-box
-
-      - name: 3. 情报搜刮 (从知名规则库拉取)
-        run: |
-          # 抓取 MetaCubeX 官方数据源
-          curl -s https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/futu@cn.yaml -o src_futu.yaml
-          curl -s https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/longbridge.yaml -o src_lb.yaml
-          curl -s https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/itiger.yaml -o src_tiger.yaml
-          curl -s https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ibkr.yaml -o src_ibkr.yaml
-          curl -s https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/schwab.yaml -o src_schwab.yaml
-          # 抓取 ACL4SSR 补充源
-          curl -s https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Futu.yaml -o src_futu_ext.yaml
-
-      - name: 4. 生产文件 (清洗与编译)
-        run: |
-          # 定义处理函数：清洗 -> 生成 YAML -> 生成 JSON -> 编译 SRS
-          process_rule() {
-            local name=$1
-            local input_file=$2
-            # 强力清洗逻辑
-            grep -hE "^\s+- " $input_file | sed 's/^[[:space:]]*- //' | sed 's/["'\'']//g' | tr -d '\r' | grep -v '^$' | sort -u > ${name}.list
-            # 生成 YAML
-            echo "payload:" > ${name}.yaml && sed 's/^/  - /' ${name}.list >> ${name}.yaml
-            # 生成 JSON 并编译 SRS
-            echo '{"version": 1, "rules": [{"domain_suffix": [' > ${name}.json
-            sed 's/^/"/;s/$/",/' ${name}.list | sed '$ s/,$//' >> ${name}.json
-            echo ']}]}' >> ${name}.json
-            ./sing-box rule-set compile ${name}.json -o ${name}.srs
-            rm ${name}.json
-          }
-
-          # --- 1. 处理 FUTU ---
-          process_rule "futu" "src_futu.yaml src_futu_ext.yaml"
-
-          # --- 2. 处理 MOOMOO (含私货) ---
-          cat <<EOF > moomoo_raw.txt
-          moomoo.com
-          moomoo-api.com
-          moomoocdn.com
-          futustatic.com
-          futusns.com
-          futuimg.com
-          futunnq.com
-          moomoo.jp
-          moomoo.com.sg
-          moomootrustee.com
-          EOF
-          process_rule "moomoo" "moomoo_raw.txt"
-
-          # --- 3. 处理 LONGBRIDGE ---
-          process_rule "longbridge" "src_lb.yaml"
-
-          # --- 4. 处理 TIGER (老虎 + TradeUP) ---
-          cat <<EOF > tiger_raw.txt
-          tradeup.com
-          itiger.com
-          tigerbrokers.com
-          EOF
-          process_rule "tiger" "src_tiger.yaml tiger_raw.txt"
-
-          # --- 5. 处理 SNOWBALL (雪盈) ---
-          cat <<EOF > snowball.txt
-          snowball-x.com
-          cn.snowball-x.com
-          EOF
-          process_rule "snowball" "snowball.txt"
-
-          # --- 6. 处理 IBKR (盈透) ---
-          process_rule "ibkr" "src_ibkr.yaml"
-
-          # --- 7. 处理 SCHWAB (嘉信 + Thinkorswim) ---
-          cat <<EOF > schwab_raw.txt
-          thinkorswim.com
-          tdameritrade.com
-          EOF
-          process_rule "schwab" "src_schwab.yaml schwab_raw.txt"
-
-      - name: 5. 自动入库推送
-        run: |
-          git config --global user.name "Rules-Factory-Bot"
+          # 删除所有 .json, .yaml, .list, .srs, .txt 文件
+          # 但保留 .github 文件夹和 README.md
+          find . -maxdepth 1 -type f -name "*.json" -delete
+          find . -maxdepth 1 -type f -name "*.yaml" -delete
+          find . -maxdepth 1 -type f -name "*.list" -delete
+          find . -maxdepth 1 -type f -name "*.srs" -delete
+          find . -maxdepth 1 -type f -name "*.txt" -delete
+          
+          git config --global user.name "Cleanup-Bot"
           git config --global user.email "bot@github.com"
-          git add *.list *.yaml *.srs
-          git commit -m "券商全家桶更新: [$(date +'%Y-%m-%d')]" || exit 0
+          git add .
+          git commit -m "🧹 自动大扫除：清理所有旧规则文件" || exit 0
           git push origin main
