@@ -1,7 +1,7 @@
-name: 自动编译规则文件 (LIST/YAML/SRS)
+name: 自动编译全券商规则 (LIST/YAML/SRS)
 on:
   schedule:
-    - cron: '0 17 * * 5' 
+    - cron: '0 17 * * 5' # 北京时间周六凌晨 01:00 运行
   workflow_dispatch:
 
 jobs:
@@ -19,22 +19,40 @@ jobs:
           tar -xzf sing-box.tar.gz && cp sing-box-*/sing-box ./
           chmod +x sing-box
 
-      - name: 3. 生产文件 (Futu & Moomoo)
+      - name: 3. 情报搜刮 (从知名规则库拉取)
         run: |
-          # 抓取原始情报
-          curl -s https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/futu@cn.yaml -o s1.yaml
-          curl -s https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Futu.yaml -o s3.yaml
-          
-          # === 处理 FUTU (地基清洗) ===
-          grep -hE "^\s+- " s1.yaml s3.yaml | sed 's/^[[:space:]]*- //' | sed 's/["'\'']//g' | tr -d '\r' | grep -v '^$' | sort -u > futu.list
-          echo "payload:" > futu.yaml && sed 's/^/  - /' futu.list >> futu.yaml
-          echo '{"version": 1, "rules": [{"domain_suffix": [' > futu.json
-          sed 's/^/"/;s/$/",/' futu.list | sed '$ s/,$//' >> futu.json
-          echo ']}]}' >> futu.json
-          ./sing-box rule-set compile futu.json -o futu.srs
+          # 抓取 MetaCubeX 官方数据源
+          curl -s https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/futu@cn.yaml -o src_futu.yaml
+          curl -s https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/longbridge.yaml -o src_lb.yaml
+          curl -s https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/itiger.yaml -o src_tiger.yaml
+          curl -s https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ibkr.yaml -o src_ibkr.yaml
+          curl -s https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/schwab.yaml -o src_schwab.yaml
+          # 抓取 ACL4SSR 补充源
+          curl -s https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Futu.yaml -o src_futu_ext.yaml
 
-          # === 处理 MOOMOO (含私货) ===
-          cat <<EOF > moomoo.list
+      - name: 4. 生产文件 (清洗与编译)
+        run: |
+          # 定义处理函数：清洗 -> 生成 YAML -> 生成 JSON -> 编译 SRS
+          process_rule() {
+            local name=$1
+            local input_file=$2
+            # 强力清洗逻辑
+            grep -hE "^\s+- " $input_file | sed 's/^[[:space:]]*- //' | sed 's/["'\'']//g' | tr -d '\r' | grep -v '^$' | sort -u > ${name}.list
+            # 生成 YAML
+            echo "payload:" > ${name}.yaml && sed 's/^/  - /' ${name}.list >> ${name}.yaml
+            # 生成 JSON 并编译 SRS
+            echo '{"version": 1, "rules": [{"domain_suffix": [' > ${name}.json
+            sed 's/^/"/;s/$/",/' ${name}.list | sed '$ s/,$//' >> ${name}.json
+            echo ']}]}' >> ${name}.json
+            ./sing-box rule-set compile ${name}.json -o ${name}.srs
+            rm ${name}.json
+          }
+
+          # --- 1. 处理 FUTU ---
+          process_rule "futu" "src_futu.yaml src_futu_ext.yaml"
+
+          # --- 2. 处理 MOOMOO (含私货) ---
+          cat <<EOF > moomoo_raw.txt
           moomoo.com
           moomoo-api.com
           moomoocdn.com
@@ -45,19 +63,41 @@ jobs:
           moomoo.jp
           moomoo.com.sg
           moomootrustee.com
-          futuholdings.com
-          futuip.com
           EOF
-          echo "payload:" > moomoo.yaml && sed 's/^/  - /' moomoo.list >> moomoo.yaml
-          echo '{"version": 1, "rules": [{"domain_suffix": [' > moomoo.json
-          sed 's/^/"/;s/$/",/' moomoo.list | sed '$ s/,$//' >> moomoo.json
-          echo ']}]}' >> moomoo.json
-          ./sing-box rule-set compile moomoo.json -o moomoo.srs
+          process_rule "moomoo" "moomoo_raw.txt"
 
-      - name: 4. 自动入库推送
+          # --- 3. 处理 LONGBRIDGE ---
+          process_rule "longbridge" "src_lb.yaml"
+
+          # --- 4. 处理 TIGER (老虎 + TradeUP) ---
+          cat <<EOF > tiger_raw.txt
+          tradeup.com
+          itiger.com
+          tigerbrokers.com
+          EOF
+          process_rule "tiger" "src_tiger.yaml tiger_raw.txt"
+
+          # --- 5. 处理 SNOWBALL (雪盈) ---
+          cat <<EOF > snowball.txt
+          snowball-x.com
+          cn.snowball-x.com
+          EOF
+          process_rule "snowball" "snowball.txt"
+
+          # --- 6. 处理 IBKR (盈透) ---
+          process_rule "ibkr" "src_ibkr.yaml"
+
+          # --- 7. 处理 SCHWAB (嘉信 + Thinkorswim) ---
+          cat <<EOF > schwab_raw.txt
+          thinkorswim.com
+          tdameritrade.com
+          EOF
+          process_rule "schwab" "src_schwab.yaml schwab_raw.txt"
+
+      - name: 5. 自动入库推送
         run: |
-          git config --global user.name "Rules-Bot"
+          git config --global user.name "Rules-Factory-Bot"
           git config --global user.email "bot@github.com"
-          git add futu.* moomoo.*
-          git commit -m "规则更新: $(date +'%Y-%m-%d')" || exit 0
+          git add *.list *.yaml *.srs
+          git commit -m "券商全家桶更新: [$(date +'%Y-%m-%d')]" || exit 0
           git push origin main
