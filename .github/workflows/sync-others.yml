@@ -1,1 +1,50 @@
+name: 其他券商自动流 (Tiger, Schwab, etc.)
+on:
+  schedule:
+    - cron: '30 17 * * 5' 
+  workflow_dispatch:
 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: checkout@v4
+      - name: 安装编译器
+        run: |
+          curl -Lo sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.11.0/sing-box-1.11.0-linux-amd64.tar.gz
+          tar -xzf sing-box.tar.gz && cp sing-box-*/sing-box ./ && chmod +x sing-box
+
+      - name: 扫荡全网规则
+        run: |
+          process_others() {
+            local name=$1
+            local sources=$2
+            mkdir -p temp
+            for url in $sources; do
+              curl -sL --retry 3 --fail "$url" >> temp/raw || echo "跳过失效源: $url"
+            done
+            grep -oE "([a-zA-Z0-9][-a-zA-Z0-9]*\.)+[a-zA-Z]{2,}" temp/raw | \
+            grep -ivE "404|notfound|github|html" | sort -u | sed 's/^/+./' > ${name}.list
+            echo "payload:" > ${name}.yaml && sed 's/^/  - /' ${name}.list >> ${name}.yaml
+            echo '{"version":1,"rules":[{"domain_suffix":[' > temp/m.json
+            sed 's/^\+\.//' ${name}.list | sed 's/^/"/;s/$/",/' | sed '$ s/,$//' >> temp/m.json
+            echo ']}]}' >> temp/m.json
+            ./sing-box rule-set compile temp/m.json -o ${name}.srs
+            rm -rf temp
+          }
+
+          process_others "itiger" "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/itiger.yaml https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/TigerBrokers/TigerBrokers.yaml"
+          process_others "snowball-x" "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/snowball@cn.yaml https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/master/geosite/snowball.txt"
+          process_others "schwab" "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/schwab.yaml https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Schwab/Schwab.yaml"
+          process_others "ibkr" "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ibkr.yaml https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/master/geosite/ibkr.txt"
+          process_others "tradingview" "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/TradingView/TradingView.yaml"
+
+      - name: 推送扩展规则
+        run: |
+          git config --global user.name "Others-Bot"
+          git config --global user.email "bot@github.com"
+          git add itiger.* snowball-x.* schwab.* ibkr.* tradingview.*
+          git commit -m "扩展券商全网同步更新 [$(date +'%Y-%m-%d')]" || exit 0
+          git push origin main
