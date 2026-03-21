@@ -1,8 +1,8 @@
 name: 自动编译 8 大规则文件 (LIST/YAML/SRS/MRS)
 on:
   schedule:
-    - cron: '0 17 * * 5' # 北京时间周六凌晨 01:00 运行
-  workflow_dispatch:      # 允许你手动点击按钮立即运行
+    - cron: '0 17 * * 5' 
+  workflow_dispatch:
 
 jobs:
   build_factory:
@@ -10,78 +10,62 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: 1. 检出仓库代码
+      - name: 1. 检出代码
         uses: actions/checkout@v4
 
-      - name: 2. 环境准备 (下载二进制编译器)
+      - name: 2. 下载并安装编译器 (修正版)
         run: |
+          # 下载 Sing-box
           curl -Lo sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.11.0/sing-box-1.11.0-linux-amd64.tar.gz
-          tar -xzf sing-box.tar.gz && mv sing-box-*/sing-box ./
-          curl -Lo mihomo.tar.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.18.10/mihomo-linux-amd64-v1.18.10.tar.gz
-          tar -xzf mihomo.tar.gz && mv mihomo ./
-
-      - name: 3. 情报搜刮 (多源抓取)
-        run: |
-          curl -s https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/futu@cn.yaml -o s1.yaml
-          curl -s https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/direct-list.txt -o s2.txt
-          curl -s https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Futu.yaml -o s3.yaml
-
-      - name: 4. 处理 Futu 4 兄弟 (清洗+编译)
-        run: |
-          # 提取域名并进行“强力地基清洗”
-          grep -hE "^\s+- " s1.yaml s3.yaml | grep -vE "futustatic|futusns|futuimg|moomoo" | sed 's/^[[:space:]]*- //' | sed 's/["'\'']//g' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -d '\r' | grep -v '^$' | sort -u > futu.list
+          tar -xzf sing-box.tar.gz && cp sing-box-*/sing-box ./
           
-          # 生成 YAML
+          # 下载 Mihomo (改用 .gz 直接解压，避开 tar 报错)
+          curl -Lo mihomo.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.18.10/mihomo-linux-amd64-v1.18.10.gz
+          gunzip mihomo.gz
+          mv mihomo-linux-amd64-v1.18.10 mihomo
+          
+          # 给执行权限
+          chmod +x sing-box mihomo
+
+      - name: 3. 抓取与清洗数据
+        run: |
+          # 抓取 Futu 源
+          curl -s https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/futu@cn.yaml -o s1.yaml
+          curl -s https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Futu.yaml -o s3.yaml
+          
+          # 处理 Futu (地基清洗)
+          grep -hE "^\s+- " s1.yaml s3.yaml | sed 's/^[[:space:]]*- //' | sed 's/["'\'']//g' | tr -d '\r' | grep -v '^$' | sort -u > futu.list
           echo "payload:" > futu.yaml && sed 's/^/  - /' futu.list >> futu.yaml
           
-          # 生成编译中间件 JSON
+          # 生成 Futu JSON 并编译
           echo '{"version": 1, "rules": [{"domain_suffix": [' > futu.json
           sed 's/^/"/;s/$/",/' futu.list | sed '$ s/,$//' >> futu.json
           echo ']}]}' >> futu.json
-          
-          # 二进制编译
           ./sing-box rule-set compile futu.json -o futu.srs
           ./mihomo rule-set compile futu.json futu.mrs
 
-      - name: 5. 处理 Moomoo 4 兄弟 (含私货+清洗+编译)
-        run: |
-          # 你的 21 条私货清单
-          cat <<EOF > moomoo_raw.txt
+          # 处理 Moomoo (私货 + 清洗)
+          cat <<EOF > moomoo.list
           moomoo.com
           moomoo-api.com
-          moomoocdn.com
           futustatic.com
           futusns.com
           futuimg.com
           futunnq.com
-          moomoo.jp
-          moomoo.com.sg
-          moomoo.com.au
-          moomoo.ca
-          moomoo.my
-          moomootrustee.com
-          futuholdings.com
-          futuholding.com
-          futuip.com
           EOF
-          # 补充搜刮到的域名并清洗
-          grep -ri "moomoo" s1.yaml s2.txt s3.yaml | grep -oE "[a-zA-Z0-9.-]+\.moomoo[a-zA-Z0-9.-]+" >> moomoo_raw.txt
-          cat moomoo_raw.txt | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | tr -d '\r' | grep -v '^$' | sort -u > moomoo.list
-          
-          # 生成 YAML
           echo "payload:" > moomoo.yaml && sed 's/^/  - /' moomoo.list >> moomoo.yaml
           
-          # 生成 JSON 并编译
+          # 生成 Moomoo JSON 并编译
           echo '{"version": 1, "rules": [{"domain_suffix": [' > moomoo.json
           sed 's/^/"/;s/$/",/' moomoo.list | sed '$ s/,$//' >> moomoo.json
           echo ']}]}' >> moomoo.json
           ./sing-box rule-set compile moomoo.json -o moomoo.srs
           ./mihomo rule-set compile moomoo.json moomoo.mrs
 
-      - name: 6. 自动入库推送
+      - name: 4. 自动入库推送
         run: |
-          git config --global user.name "Rules-Factory-Bot"
+          git config --global user.name "Rules-Bot"
           git config --global user.email "bot@github.com"
           git add futu.* moomoo.*
-          git commit -m "地基清洗完毕: 产出 8 大全能文件 [$(date +'%Y-%m-%d')]" || exit 0
-          git push
+          git commit -m "8大格式产出: $(date +'%Y-%m-%d')" || exit 0
+          git push origin main
