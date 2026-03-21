@@ -1,23 +1,13 @@
 payload:
-    - +.moomoo.com
-    - +.moomooequity.com
-    - +.moomootrustee.com
-    - +.moomoo-api.com
-    - +.moomoo.jp
-    - +.moomoo.com.sg
-    - +.moomoo.com.au
-    - +.moomoo.ca
-    - +.moomoo.my
-    - +.moomoo.io
-    - +.moomooapp.com
-    - +.moomoobull.com
-    - +.moomoocdn.com
-    - +.futustatic.com
-     - +.futu-static.com
-    - +.futuip.com
-    - +.futusns.com
-    - +.futuimg.com
-    - +.futunnq.com
-    - +.futuholdings.com
-    - +.futuholding.com
-
+  - moomoo.com
+  - moomoo-api.com
+  - moomoocdn.com
+  - futustatic.com
+  - futusns.com
+  - futuimg.com
+  - futunnq.com
+  - moomoo.jp
+  - moomoo.com.sg
+  - moomootrustee.com
+  - futuholdings.com
+  - futuip.com
