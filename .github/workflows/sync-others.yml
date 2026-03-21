@@ -10,24 +10,38 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
       - name: 安装编译器
         run: |
           curl -Lo sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.11.0/sing-box-1.11.0-linux-amd64.tar.gz
           tar -xzf sing-box.tar.gz && cp sing-box-*/sing-box ./ && chmod +x sing-box
 
-      - name: 扫荡全网规则
+      - name: 扫荡全网并强制保底
         run: |
           process_others() {
             local name=$1
             local sources=$2
+            local manual=$3
             mkdir -p temp
+            
+            # 1. 注入手动保底 (确保 TradeUP / Thinkorswim 永不丢失)
+            echo "$manual" | tr ',' '\n' > temp/raw
+            
+            # 2. 抓取大佬源增量
             for url in $sources; do
               curl -sL --retry 3 --fail "$url" >> temp/raw || echo "跳过失效源: $url"
             done
+            
+            # 3. 强力清洗：提取、去重、加前缀
             grep -oE "([a-zA-Z0-9][-a-zA-Z0-9]*\.)+[a-zA-Z]{2,}" temp/raw | \
             grep -ivE "404|notfound|github|html" | sort -u | sed 's/^/+./' > ${name}.list
+            
+            # 4. 生成 YAML
             echo "payload:" > ${name}.yaml && sed 's/^/  - /' ${name}.list >> ${name}.yaml
+            
+            # 5. 编译 SRS
             echo '{"version":1,"rules":[{"domain_suffix":[' > temp/m.json
             sed 's/^\+\.//' ${name}.list | sed 's/^/"/;s/$/",/' | sed '$ s/,$//' >> temp/m.json
             echo ']}]}' >> temp/m.json
@@ -35,16 +49,35 @@ jobs:
             rm -rf temp
           }
 
-          process_others "itiger" "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/itiger.yaml https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/TigerBrokers/TigerBrokers.yaml"
-          process_others "snowball-x" "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/snowball@cn.yaml https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/master/geosite/snowball.txt"
-          process_others "schwab" "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/schwab.yaml https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/Schwab/Schwab.yaml"
-          process_others "ibkr" "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ibkr.yaml https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/master/geosite/ibkr.txt"
-          process_others "tradingview" "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/TradingView/TradingView.yaml"
+          # 老虎：并入 TradeUP 及所有相关域名
+          process_others "itiger" \
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/itiger.yaml" \
+            "itiger.com,tradeup.com,itigerup.com,itigergrowth.com,laohu8.com,tigerbrokers.com,lowatiger.com"
 
-      - name: 推送扩展规则
+          # 嘉信：合并 Thinkorswim 与 TD Ameritrade
+          process_others "schwab" \
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/schwab.yaml" \
+            "schwab.com,schwabplan.com,thinkorswim.com,tdameritrade.com,trade.thinkorswim.com"
+
+          # 雪球：注入 XUEQIU 保底
+          process_others "snowball-x" \
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/snowball@cn.yaml" \
+            "snowballsecurities.com,xueqiu.com,snowball-x.com"
+
+          # 盈透
+          process_others "ibkr" \
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ibkr.yaml" \
+            "interactivebrokers.com,ibkr.com,ibllc.com"
+
+          # TradingView：注入 CDN 保底
+          process_others "tradingview" \
+            "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/TradingView/TradingView.yaml" \
+            "tradingview.com,tvcdn.com"
+
+      - name: 推送规则更新
         run: |
           git config --global user.name "Others-Bot"
           git config --global user.email "bot@github.com"
-          git add itiger.* snowball-x.* schwab.* ibkr.* tradingview.*
-          git commit -m "扩展券商全网同步更新 [$(date +'%Y-%m-%d')]" || exit 0
+          git add *.list *.yaml *.srs
+          git commit -m "深度补全：合并 TradeUP、Thinkorswim 及 CDN 保底 [$(date +'%Y-%m-%d')]" || exit 0
           git push origin main
