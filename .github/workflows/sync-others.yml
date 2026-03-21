@@ -26,7 +26,7 @@ jobs:
             local manual=$3
             mkdir -p temp
             
-            # 1. 优先注入手动保底名单 (解决大佬源漏掉的 TradeUP/Thinkorswim/雪盈)
+            # 1. 优先注入手动保底名单 (解决大佬源漏掉的 TradeUP/Thinkorswim/雪盈/长桥)
             echo "$manual" | tr ',' '\n' > temp/raw
             
             # 2. 抓取远程大佬源 (如果 URL 不为空)
@@ -75,6 +75,11 @@ jobs:
             "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ibkr.yaml" \
             "interactivebrokers.com,ibkr.com,ibllc.com"
 
+          # 长桥证券 (Longbridge)：包含港美股底层通讯
+          process_others "longbridge" \
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/longbridge.yaml" \
+            "longbridgeapp.com,longbridge.hk,lbkrs.com,longbridge-ny.com,longbridge.com"
+
           # TradingView：注入 CDN 确保图表加载速度
           process_others "tradingview" \
             "https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/TradingView/TradingView.yaml" \
@@ -85,5 +90,4 @@ jobs:
           git config --global user.name "Others-Bot"
           git config --global user.email "bot@github.com"
           git add *.list *.yaml *.srs
-          # 只有在文件有变动时才 commit，避免报错
-          git diff --quiet && git diff --staged --quiet || (git commit -m "规则自动修补：分离雪球社区、锁定 TradeUP 与 Thinkorswim [$(date +'%Y-%m-%d')]" && git push origin main)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "扩展券商更新 [$(date +'%Y-%m-%d')]" && git push origin main)
