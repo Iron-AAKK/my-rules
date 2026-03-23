@@ -1,4 +1,4 @@
-name: 其他券商自动流 (Tiger, Schwab, etc.)
+name: 2.2_同步更新_扩展券商_others_iTiger+IBKR+etc._list+srs+yaml
 on:
   schedule:
     - cron: '30 17 * * 5' # 每周五运行
