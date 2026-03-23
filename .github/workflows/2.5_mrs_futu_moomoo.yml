@@ -13,30 +13,36 @@ jobs:
 
       - name: 准备隔离环境
         run: |
-          # 创建专门存放 MRS 的目录
+          # 1. 创建专门存放 MRS 的目录
           mkdir -p mrs_bins
-          # 下载官方编译器
+          # 2. 下载官方编译器
           curl -Lo mihomo.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.18.9/mihomo-linux-amd64-v1.18.9.gz
           gunzip -c mihomo.gz > mihomo && chmod +x mihomo
 
       - name: 编译核心 MRS
         run: |
-          compile_core() {
-            local f=$1; [ -f "$f" ] || return 0
-            echo "正在测试编译: $f"
-            # 关键：去掉 .list 里的 +. 前缀再编译
-            sed 's/^\+\.//' "$f" > temp.txt
-            ./mihomo rule-set compile --type domain temp.txt -o "mrs_bins/${f%.list}.mrs"
-            rm temp.txt
-          }
-          compile_core "futu.list"
-          compile_core "moomoo.list"
+          # 循环处理核心列表
+          for f in futu.list moomoo.list; do
+            if [ -f "$f" ]; then
+              echo "正在处理: $f"
+              # 关键清洗：剥离 +. 前缀并存为临时纯净列表
+              sed 's/^\+\.//' "$f" > temp_plain.txt
+              
+              # 使用显式输出路径，防止编译器进入交互/服务模式
+              ./mihomo rule-set compile --type domain temp_plain.txt --output "mrs_bins/${f%.list}.mrs"
+              
+              echo "$f 转换成功。"
+              rm temp_plain.txt
+            else
+              echo "警告：未找到 $f，请确认已运行过 2.3 脚本。"
+            fi
+          done
 
       - name: 提交到隔离目录
         run: |
           git config --global user.name "MRS-Tester-Bot"
           git config --global user.email "bot@github.com"
-          # 仅添加新文件夹里的 mrs 文件
+          # 仅推送 mrs_bins 文件夹下的产物，绝对不碰根目录
           git add mrs_bins/*.mrs
-          git commit -m "隔离测试产物 [$(date +'%Y-%m-%d')]" || exit 0
+          git commit -m "隔离测试产物更新 [$(date +'%Y-%m-%d')]" || exit 0
           git push origin main
