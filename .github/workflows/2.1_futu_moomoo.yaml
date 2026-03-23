@@ -1,4 +1,4 @@
-name: 2.1_抓数据_futu&moomoo_list+srs+yaml
+name: 2.1_Fetch_Futu_MooMoo_list_srs_yaml
 on:
   schedule:
     - cron: '0 17 * * 5' 
