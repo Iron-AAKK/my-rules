@@ -1,4 +1,4 @@
-name: 3.3_自质检_mrs_合格度
+name: 3.3_Verify_All_mrs_Final
 
 on:
   workflow_run:
