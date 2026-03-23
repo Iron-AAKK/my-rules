@@ -1,4 +1,4 @@
-name: 3.3-MRS终极质检(物理层)
+name: 3.3_自动质检_mrs_完整性
 on:
   workflow_run:
     workflows: ["3.2-others-MRS生成"]
