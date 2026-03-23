@@ -2,13 +2,12 @@ name: 3.3_自质检_mrs_合格度
 
 on:
   workflow_run:
-    workflows:
-      - '3.1_转格式_futu&moomoo_mrs'
-      - '3.2_转格式_iTiger+IBKR+etc_mrs'
+    # 直接硬连这两个文件，避开所有名字和加号的 Bug
+    workflows: 
+      - "3.1_mrs_futu&moomoo.yaml"
+      - "3.2_mrs_others.yaml"
     types:
       - completed
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
