@@ -3,15 +3,18 @@ name: 3.3_自质检_mrs_合格度
 on:
   workflow_run:
     workflows: 
-      - "3.1_mrs_futu&moomoo.yaml"
-      - "3.2_mrs_others.yaml"
+      - "3.1_转格式_futu&moomoo_mrs"
+      - "3.2_转格式_iTiger&IBKR&etc._mrs"
     types:
       - completed
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   hard_check:
     runs-on: ubuntu-latest
+    # 只要前置成功就跑
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
@@ -32,4 +35,4 @@ jobs:
           for file in *.mrs; do
             verify_mrs "$file"
           done
-          echo "=== 验收通过：当前仓库所有 MRS 文件均可安全使用 ==="
+          echo "=== 验收通过 ==="
