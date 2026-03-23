@@ -1,4 +1,4 @@
-name: 2.1_同步更新_核心_futu&moomoo_list+srs+yaml
+name: 2.1_同步更新_futu&moomoo_list+srs+yaml
 on:
   schedule:
     - cron: '0 17 * * 5' 
