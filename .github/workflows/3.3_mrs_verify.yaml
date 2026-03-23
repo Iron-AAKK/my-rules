@@ -1,4 +1,4 @@
-name: 3.3_自动质检_mrs_完整性
+name: 3.3_自质检_mrs_完整性
 on:
   workflow_run:
     workflows: ["3.2-others-MRS生成"]
