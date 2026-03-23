@@ -2,9 +2,9 @@ name: 3.3_Verify_All_mrs_Final
 
 on:
   workflow_run:
-    workflows: 
-      - "3.1_转格式_futu&moomoo_mrs"
-      - "3.2_转格式_iTiger&IBKR&etc._mrs"
+    workflows:
+      - "3.1_Convert_Futu_MooMoo_mrs"
+      - "3.2_Convert_iTiger_IBKR_etc_mrs"    
     types:
       - completed
     branches:
