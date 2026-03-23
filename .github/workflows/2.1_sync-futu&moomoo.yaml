@@ -1,4 +1,4 @@
-name: 核心券商自动流 (Futu & Moomoo)
+name: 2.1_同步更新_核心券商_futu&moomoo_list+srs+yaml
 on:
   schedule:
     - cron: '0 17 * * 5' 
