@@ -1,0 +1,47 @@
+name: 2.7-MRS 模拟验收 (AI 自测)
+on:
+  workflow_dispatch: 
+
+jobs:
+  verify_mrs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 准备验证工具
+        run: |
+          # 1. 下载内核作为“扫描仪”
+          curl -Lo mihomo.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.18.9/mihomo-linux-amd64-v1.18.9.gz
+          gunzip -c mihomo.gz > mihomo && chmod +x mihomo
+
+      - name: 执行 AI 压力测试
+        run: |
+          echo "=== 开始对隔离区 mrs_bins 进行二进制校验 ==="
+          
+          verify_file() {
+            local f="mrs_bins/$1.mrs"
+            if [ -f "$f" ]; then
+              echo "-----------------------------------"
+              echo "正在检查文件: $f"
+              # 使用 unpack 指令尝试读取。如果二进制格式受损或不支持，这里会直接 Fail
+              ./mihomo rule-set unpack "$f" > /dev/null
+              echo "✅ $1.mrs 结构合法，内核解析正常。"
+            else
+              echo "❌ 警告：未发现 $f，请确认 2.5 和 2.6 已运行成功。"
+              exit 1
+            fi
+          }
+
+          # 验证所有生成的成果
+          verify_file "futu"
+          verify_file "moomoo"
+          verify_file "itiger"
+          verify_file "ibkr"
+          verify_file "longbridge"
+          verify_file "schwab"
+          verify_file "snowball-x"
+          verify_file "tradingview"
+          
+          echo "-----------------------------------"
+          echo "=== 最终报告：所有 MRS 文件均通过内核解析验证，可以安全使用！ ==="
