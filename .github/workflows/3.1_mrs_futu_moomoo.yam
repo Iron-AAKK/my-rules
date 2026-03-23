@@ -1,0 +1,37 @@
+name: 3.1-futu&moomoo-MRS生成
+on:
+  schedule:
+    - cron: '0 18 * * 5' # 对应北京时间周六凌晨 02:00
+  workflow_dispatch:
+
+jobs:
+  build_mrs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: 安装编译器
+        run: |
+          curl -Lo sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.11.0/sing-box-1.11.0-linux-amd64.tar.gz
+          tar -xzf sing-box.tar.gz && cp sing-box-*/sing-box ./ && chmod +x sing-box
+      - name: 编译核心 MRS
+        run: |
+          compile_mrs() {
+            local name=$1; mkdir -p temp
+            if [ ! -f "${name}.list" ]; then echo "跳过: 未发现 ${name}.list"; return; fi
+            echo '{"version":1,"rules":[{"domain_suffix":[' > temp/m.json
+            sed 's/^\+\.//' ${name}.list | sed 's/^/"/;s/$/",/' | sed '$ s/,$//' >> temp/m.json
+            echo ']}]}' >> temp/m.json
+            ./sing-box rule-set compile temp/m.json -o ${name}.mrs
+            rm -rf temp
+          }
+          compile_mrs "futu"
+          compile_mrs "moomoo"
+      - name: 推送至根目录
+        run: |
+          git config --global user.name "MRS-Builder-Bot"
+          git config --global user.email "bot@github.com"
+          git add *.mrs
+          git commit -m "同步更新核心 MRS [$(date +'%Y-%m-%d')]" || exit 0
+          git push origin main
