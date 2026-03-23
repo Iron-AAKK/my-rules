@@ -1,0 +1,42 @@
+name: 2.5-核心MRS测试(Futu-Moomoo)
+on:
+  workflow_dispatch: 
+
+jobs:
+  test_core_mrs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+      - name: 准备隔离环境
+        run: |
+          # 创建专门存放 MRS 的目录
+          mkdir -p mrs_bins
+          # 下载官方编译器
+          curl -Lo mihomo.gz https://github.com/MetaCubeX/mihomo/releases/download/v1.18.9/mihomo-linux-amd64-v1.18.9.gz
+          gunzip -c mihomo.gz > mihomo && chmod +x mihomo
+
+      - name: 编译核心 MRS
+        run: |
+          compile_core() {
+            local f=$1; [ -f "$f" ] || return 0
+            echo "正在测试编译: $f"
+            # 关键：去掉 .list 里的 +. 前缀再编译
+            sed 's/^\+\.//' "$f" > temp.txt
+            ./mihomo rule-set compile --type domain temp.txt -o "mrs_bins/${f%.list}.mrs"
+            rm temp.txt
+          }
+          compile_core "futu.list"
+          compile_core "moomoo.list"
+
+      - name: 提交到隔离目录
+        run: |
+          git config --global user.name "MRS-Tester-Bot"
+          git config --global user.email "bot@github.com"
+          # 仅添加新文件夹里的 mrs 文件
+          git add mrs_bins/*.mrs
+          git commit -m "隔离测试产物 [$(date +'%Y-%m-%d')]" || exit 0
+          git push origin main
