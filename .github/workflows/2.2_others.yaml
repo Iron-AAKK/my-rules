@@ -1,4 +1,4 @@
-name: 2.2_抓数据_iTiger+IBKR+etc._list+srs+yaml
+name: 2.2_Fetch_iTiger_IBKR_etc_list_srs_yaml
 on:
   schedule:
     - cron: '30 17 * * 5' # 每周五运行
