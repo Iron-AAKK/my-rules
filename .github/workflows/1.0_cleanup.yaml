@@ -1,4 +1,4 @@
-name: DEBUG-仓库强制清空
+name: 1.0_强制清空_重置基础资产
 on:
   workflow_dispatch: # 允许手动点击运行
 
