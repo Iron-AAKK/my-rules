@@ -1,4 +1,4 @@
-name: 1.0_清仓库_重置基础资产
+name: 1.0_Reset_Repository_Base_Assets
 on:
   workflow_dispatch: # 允许手动点击运行
 
