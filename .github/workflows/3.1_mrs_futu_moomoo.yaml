@@ -1,4 +1,4 @@
-name: 3.1-futu&moomoo-MRS生成
+name: 3.1_生成产出_核心券商_futu&moomoo_mrs
 on:
   schedule:
     - cron: '0 18 * * 5' # 对应北京时间周六凌晨 02:00
