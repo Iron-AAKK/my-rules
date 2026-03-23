@@ -1,4 +1,4 @@
-name: "3.2_转格式_iTiger&IBKR&etc._mrs"
+name: 3.2_Convert_iTiger_IBKR_etc_mrs
 on:
   schedule:
     - cron: '30 18 * * 5' # 对应北京时间周六凌晨 02:30
