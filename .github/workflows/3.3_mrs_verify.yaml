@@ -1,4 +1,4 @@
-name: 3.3_自质检_mrs_完整性
+name: 3.3_自质检_mrs_合格度
 on:
   workflow_run:
     workflows: ["3.2_转格式_iTiger+IBKR+etc._mrs"]
