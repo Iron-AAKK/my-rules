@@ -1,7 +1,7 @@
 name: 2.1_Fetch_Futu_MooMoo_list_srs_yaml
 on:
   schedule:
-    - cron: '0 17 * * 5' 
+    - cron: '0 17 * * 5'  # 周六 01:00 (北京时间)
   workflow_dispatch:
 
 jobs:
