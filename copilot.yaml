@@ -1,0 +1,13 @@
+payload:
+  - +.api.githubcopilot.com
+  - +.bingapis.com
+  - +.copilot-proxy.githubusercontent.com
+  - +.copilot.ai
+  - +.copilot.cloud.microsoft
+  - +.copilot.com
+  - +.copilot.microsoft.com
+  - +.dictation.microsoft.com
+  - +.edgeservices.bing.com
+  - +.github-cloud.s3.amazonaws.com
+  - +.githubcopilot.com
+  - +.sydney.bing.com
