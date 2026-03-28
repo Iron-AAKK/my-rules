@@ -1,7 +1,7 @@
 name: 3.1_Fetch_Copilot_list_srs_yaml
 on:
   schedule:
-    - cron: '30 17 * * 5' 
+    - cron: '40 17 * * 5' # 周六 01:40 (北京时间)
   workflow_dispatch:
 
 jobs:
