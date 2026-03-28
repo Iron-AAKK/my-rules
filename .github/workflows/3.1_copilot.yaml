@@ -1,5 +1,15 @@
 name: 3.1_Fetch_Copilot_list_srs_yaml
 
+# =================================================================
+# 脚本日期：20260326
+# 脚本功能：自动提取并编译 Microsoft Copilot 专用规则集
+# 运行说明：每周五 UTC 17:40 (北京时间周六 01:40) 运行
+# 客户要求：
+#   1. 精准分流：微软服务（Office, OneDrive, Bing搜索等）全部直连，仅 Copilot 代理。
+#   2. 安全合规：确保“微软账户-安全-登录活动”显示为中国本地 IP。
+# 触发机制：定时自动运行 + 手动控制 (workflow_dispatch)
+# =================================================================
+
 on:
   schedule:
     - cron: '40 17 * * 5'
@@ -11,18 +21,22 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - name: 检出仓库代码
+        uses: actions/checkout@v4
       
-      - name: 安装编译器
+      - name: 准备 Sing-box 编译器
         run: |
           curl -Lo sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.11.0/sing-box-1.11.0-linux-amd64.tar.gz
           tar -xzf sing-box.tar.gz && cp sing-box-*/sing-box ./ && chmod +x sing-box
 
-      - name: 生产 Copilot 核心地基
+      - name: 抓取并清洗 Copilot 规则
         run: |
           mkdir -p temp
+          
+          # 定义核心特征关键词
           echo "sydney.bing.com,copilot,bingviz,githubcopilot,copilot-edge" | tr ',' '\n' > temp/features
 
+          # 写入手动精准列表
           printf "%s\n" \
           "copilot.microsoft.com" \
           "copilot.cloud.microsoft" \
@@ -37,6 +51,7 @@ jobs:
           "github-cloud.s3.amazonaws.com" \
           "dictation.microsoft.com" > temp/raw
           
+          # 远程扫描源
           declare -a upstream_sources=(
             "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.yaml"
             "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bing.yaml"
@@ -48,12 +63,14 @@ jobs:
             curl -sL --retry 3 --fail "$url" | grep -iEf temp/features >> temp/raw || echo "Skip: $url"
           done
 
+          # 执行强效清洗（剔除登录与全家桶域名，确保登录安全）
           grep -oE "([a-zA-Z0-9][-a-zA-Z0-9]*\.)+[a-zA-Z]{2,}" temp/raw | \
           grep -ivE "login|account|auth|password|registration|profile|msa\.|passport|signup|signin|identity|2fa|verify|verification" | \
           grep -ivE "^bing\.com$|^microsoft\.com$|^live\.com$|^office\.com$|^onedrive\.com$|^outlook\.com$|^skype\.com$|^msn\.com$|^windows\.com$|^visualstudio\.com$|^azure\.com$" | \
           grep -ivE "assets|static|res\.microsoft|telemetry|selfservehost|browser\.events|connectivity" | \
           sort -u | sed 's/^/+./' > copilot.list
 
+          # 生成各平台格式
           echo "payload:" > copilot.yaml
           sed 's/^/  - /' copilot.list >> copilot.yaml
 
@@ -63,7 +80,7 @@ jobs:
           ./sing-box rule-set compile temp/m.json -o copilot.srs
           rm -rf temp
 
-      - name: 推送规则更新
+      - name: 提交并推送更新
         run: |
           git config --global user.name "Copilot-Bot"
           git config --global user.email "bot@github.com"
