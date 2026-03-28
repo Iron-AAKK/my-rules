@@ -1,7 +1,7 @@
 name: 2.2_Fetch_iTiger_IBKR_etc_list_srs_yaml
 on:
   schedule:
-    - cron: '30 17 * * 5' # 每周五运行
+    - cron: '20 17 * * 5' # 周六 01:20 (北京时间)
   workflow_dispatch:      # 允许手动触发
 
 jobs:
