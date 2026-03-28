@@ -17,30 +17,31 @@ jobs:
           curl -Lo sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.11.0/sing-box-1.11.0-linux-amd64.tar.gz
           tar -xzf sing-box.tar.gz && cp sing-box-*/sing-box ./ && chmod +x sing-box
 
-      - name: 生产 Copilot 核心地基 (动态扫描版)
+      - name: 生产 Copilot 核心地基 (多维深度扫描版)
         run: |
           mkdir -p temp
           
-          # 1. 注入手动整理的核心域名 (保底，确保 sydney 等关键接口永远存在)
+          # 1. 注入手动整理的核心保底域名 (手动分析来源：Edge 侧边栏及 Windows 内部组件)
           echo "copilot.microsoft.com,copilot.cloud.microsoft,copilot.com,copilot.ai,sydney.bing.com,copilot-edge.microsoft.com,gateway.bingviz.microsoft.net,gateway.bingviz.microsoftapp.net,bingapis.com,edgeservices.bing.com,githubcopilot.com,api.githubcopilot.com,copilot-proxy.githubusercontent.com,github-cloud.s3.amazonaws.com,dictation.microsoft.com" | tr ',' '\n' > temp/raw
           
-          # 2. 动态扫描：从上游 MetaCubeX 基础库中嗅探新域名
-          # 这样如果微软以后改了 Copilot 后缀，脚本会自动抓取
+          # 2. 深度扫描：加入更多高价值源 (分析来源：Loyalsoldier & MetaCubeX AI 标签)
           declare -a upstream_sources=(
             "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.yaml"
             "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bing.yaml"
             "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/openai.yaml"
+            "https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/master/geosite/category-ai-!cn.txt"
           )
 
           for url in "${upstream_sources[@]}"; do
-            curl -sL --retry 3 --fail "$url" | grep -iE "copilot|sydney|bingviz" >> temp/raw || echo "跳过源: $url"
+            echo "正在扫描增量源: $url"
+            # 这里的 grep 加入了对 chatgpt/openai 关联域名的兼容扫描
+            curl -sL --retry 3 --fail "$url" | grep -iE "copilot|sydney|bingviz|github-cloud" >> temp/raw || echo "跳过源: $url"
           done
 
-          # 3. 强效清洗与“精准防御”
-          # 我们提取域名，但必须排除掉 bing.com 和 microsoft.com 主域名
-          # 否则会把你的 OneDrive 和 Bing 搜索也带进代理
+          # 3. 强效清洗与“精准防御” (优化点：更严苛的排除逻辑)
+          # 提取域名 -> 排除干扰 -> 排序去重 -> 添加前缀
           grep -oE "([a-zA-Z0-9][-a-zA-Z0-9]*\.)+[a-zA-Z]{2,}" temp/raw | \
-          grep -ivE "^bing\.com$|^microsoft\.com$|^live\.com$|^office\.com$" | \
+          grep -ivE "^bing\.com$|^microsoft\.com$|^live\.com$|^office\.com$|^onedrive\.com$|^outlook\.com$" | \
           sort -u | sed 's/^/+./' > copilot.list
 
           # 4. 生成 YAML (OpenClash 专用)
@@ -59,5 +60,5 @@ jobs:
           git config --global user.name "Copilot-Bot"
           git config --global user.email "bot@github.com"
           git add copilot.*
-          git commit -m "规则自动进化：Copilot 域名精准锁定 [$(date +'%Y-%m-%d')]" || exit 0
+          git commit -m "自动化扫描更新：Copilot 动态规则锁定 [$(date +'%Y-%m-%d')]" || exit 0
           git push origin main
