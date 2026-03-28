@@ -1,7 +1,18 @@
+# =================================================================
+# 脚本功能：自动提取并编译 Microsoft Copilot 专用规则集
+# 客户要求：
+# 1. 精准分流：微软服务（Office, OneDrive, Bing搜索等）全部走直连，仅 Copilot 业务走代理。
+# 2. 安全合规：确保“微软账户-安全-登录活动”中的位置记录为中国本地 IP。
+# 逻辑核心：
+# - 动态抓取：从 MetaCubeX 和 Loyalsoldier 等权威源提取 AI 相关子域。
+# - 强力剔除：物理抹除所有 login, account, auth, msa 等身份验证域名。
+# - 根域名保护：禁止 bing.com 和 microsoft.com 根域名进入代理列表。
+# =================================================================
+
 name: 3.1_Fetch_Copilot_list_srs_yaml
 on:
   schedule:
-    - cron: '40 17 * * 5' # 周六 01:40 (北京时间)
+    - cron: '40 17 * * 5' # 北京时间周六 01:40
   workflow_dispatch:
 
 jobs:
@@ -17,14 +28,29 @@ jobs:
           curl -Lo sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.11.0/sing-box-1.11.0-linux-amd64.tar.gz
           tar -xzf sing-box.tar.gz && cp sing-box-*/sing-box ./ && chmod +x sing-box
 
-      - name: 生产 Copilot 核心地基 (多维深度扫描版)
+      - name: 生产 Copilot 核心地基 (身份安全加固版)
         run: |
           mkdir -p temp
           
-          # 1. 注入手动整理的核心保底域名 (手动分析来源：Edge 侧边栏及 Windows 内部组件)
-          echo "copilot.microsoft.com,copilot.cloud.microsoft,copilot.com,copilot.ai,sydney.bing.com,copilot-edge.microsoft.com,gateway.bingviz.microsoft.net,gateway.bingviz.microsoftapp.net,bingapis.com,edgeservices.bing.com,githubcopilot.com,api.githubcopilot.com,copilot-proxy.githubusercontent.com,github-cloud.s3.amazonaws.com,dictation.microsoft.com" | tr ',' '\n' > temp/raw
+          # 1. 定义核心 AI 特征词 (用于从大库中精准捞取 Copilot 资产)
+          echo "sydney.bing.com,copilot,bingviz,githubcopilot,copilot-edge" | tr ',' '\n' > temp/features
+
+          # 2. 注入手动精准列表 (经过抓包确认的 Copilot 必须代理的后端)
+          cat <<EOF > temp/raw
+          copilot.microsoft.com
+          copilot.cloud.microsoft
+          copilot.com
+          copilot.ai
+          sydney.bing.com
+          bingapis.com
+          edgeservices.bing.com
+          githubcopilot.com
+          api.githubcopilot.com
+          copilot-proxy.githubusercontent.com
+          github-cloud.s3.amazonaws.com
+EOF
           
-          # 2. 深度扫描：加入更多高价值源 (分析来源：Loyalsoldier & MetaCubeX AI 标签)
+          # 3. 动态扫描：从 4 个上游源提取 (包括你关注的非中国 AI 规则集)
           declare -a upstream_sources=(
             "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.yaml"
             "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bing.yaml"
@@ -33,22 +59,25 @@ jobs:
           )
 
           for url in "${upstream_sources[@]}"; do
-            echo "正在扫描增量源: $url"
-            # 这里的 grep 加入了对 chatgpt/openai 关联域名的兼容扫描
-            curl -sL --retry 3 --fail "$url" | grep -iE "copilot|sydney|bingviz|github-cloud" >> temp/raw || echo "跳过源: $url"
+            curl -sL --retry 3 --fail "$url" | grep -iEf temp/features >> temp/raw || echo "跳过源: $url"
           done
 
-          # 3. 强效清洗与“精准防御” (优化点：更严苛的排除逻辑)
-          # 提取域名 -> 排除干扰 -> 排序去重 -> 添加前缀
+          # 4. 【核心清洗：外科手术式剔除】
+          # 这一步是满足“查看登录地址必须是中国”的核心保障
           grep -oE "([a-zA-Z0-9][-a-zA-Z0-9]*\.)+[a-zA-Z]{2,}" temp/raw | \
-          grep -ivE "^bing\.com$|^microsoft\.com$|^live\.com$|^office\.com$|^onedrive\.com$|^outlook\.com$" | \
+          # --- 关键：剔除所有涉及身份验证、账户、登录、2FA、验证码的域名 ---
+          grep -ivE "login|account|auth|password|registration|profile|msa\.|passport|signup|signin|identity|2fa|verify|verification" | \
+          # --- 关键：剔除微软基础服务根域名，确保其走你 OpenClash 下方的直连规则 ---
+          grep -ivE "^bing\.com$|^microsoft\.com$|^live\.com$|^office\.com$|^onedrive\.com$|^outlook\.com$|^skype\.com$|^msn\.com$|^windows\.com$|^visualstudio\.com$|^azure\.com$" | \
+          # --- 关键：剔除静态资源、测速和遥测（直连更快且不干扰登录 IP） ---
+          grep -ivE "assets|static|res\.microsoft|telemetry|selfservehost|browser\.events|connectivity" | \
           sort -u | sed 's/^/+./' > copilot.list
 
-          # 4. 生成 YAML (OpenClash 专用)
+          # 5. 生成 YAML (适配 OpenClash)
           echo "payload:" > copilot.yaml
           sed 's/^/  - /' copilot.list >> copilot.yaml
 
-          # 5. 编译 SRS (sing-box 专用)
+          # 6. 编译 SRS (适配 sing-box)
           echo '{"version":1,"rules":[{"domain_suffix":[' > temp/m.json
           sed 's/^\+\.//' copilot.list | sed 's/^/"/;s/$/",/' | sed '$ s/,$//' >> temp/m.json
           echo ']}]}' >> temp/m.json
@@ -60,5 +89,5 @@ jobs:
           git config --global user.name "Copilot-Bot"
           git config --global user.email "bot@github.com"
           git add copilot.*
-          git commit -m "自动化扫描更新：Copilot 动态规则锁定 [$(date +'%Y-%m-%d')]" || exit 0
+          git commit -m "安全加固更新：隔离身份验证与基础服务，锁定 Copilot 核心 [$(date +'%Y-%m-%d')]" || exit 0
           git push origin main
