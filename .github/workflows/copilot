@@ -1,0 +1,63 @@
+name: 3.1_Fetch_Copilot_list_srs_yaml
+on:
+  schedule:
+    - cron: '30 17 * * 5' 
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 安装编译器
+        run: |
+          curl -Lo sing-box.tar.gz https://github.com/SagerNet/sing-box/releases/download/v1.11.0/sing-box-1.11.0-linux-amd64.tar.gz
+          tar -xzf sing-box.tar.gz && cp sing-box-*/sing-box ./ && chmod +x sing-box
+
+      - name: 生产 Copilot 核心地基 (动态扫描版)
+        run: |
+          mkdir -p temp
+          
+          # 1. 注入手动整理的核心域名 (保底，确保 sydney 等关键接口永远存在)
+          echo "copilot.microsoft.com,copilot.cloud.microsoft,copilot.com,copilot.ai,sydney.bing.com,copilot-edge.microsoft.com,gateway.bingviz.microsoft.net,gateway.bingviz.microsoftapp.net,bingapis.com,edgeservices.bing.com,githubcopilot.com,api.githubcopilot.com,copilot-proxy.githubusercontent.com,github-cloud.s3.amazonaws.com,dictation.microsoft.com" | tr ',' '\n' > temp/raw
+          
+          # 2. 动态扫描：从上游 MetaCubeX 基础库中嗅探新域名
+          # 这样如果微软以后改了 Copilot 后缀，脚本会自动抓取
+          declare -a upstream_sources=(
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.yaml"
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bing.yaml"
+            "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/openai.yaml"
+          )
+
+          for url in "${upstream_sources[@]}"; do
+            curl -sL --retry 3 --fail "$url" | grep -iE "copilot|sydney|bingviz" >> temp/raw || echo "跳过源: $url"
+          done
+
+          # 3. 强效清洗与“精准防御”
+          # 我们提取域名，但必须排除掉 bing.com 和 microsoft.com 主域名
+          # 否则会把你的 OneDrive 和 Bing 搜索也带进代理
+          grep -oE "([a-zA-Z0-9][-a-zA-Z0-9]*\.)+[a-zA-Z]{2,}" temp/raw | \
+          grep -ivE "^bing\.com$|^microsoft\.com$|^live\.com$|^office\.com$" | \
+          sort -u | sed 's/^/+./' > copilot.list
+
+          # 4. 生成 YAML (OpenClash 专用)
+          echo "payload:" > copilot.yaml
+          sed 's/^/  - /' copilot.list >> copilot.yaml
+
+          # 5. 编译 SRS (sing-box 专用)
+          echo '{"version":1,"rules":[{"domain_suffix":[' > temp/m.json
+          sed 's/^\+\.//' copilot.list | sed 's/^/"/;s/$/",/' | sed '$ s/,$//' >> temp/m.json
+          echo ']}]}' >> temp/m.json
+          ./sing-box rule-set compile temp/m.json -o copilot.srs
+          rm -rf temp
+
+      - name: 推送规则更新
+        run: |
+          git config --global user.name "Copilot-Bot"
+          git config --global user.email "bot@github.com"
+          git add copilot.*
+          git commit -m "规则自动进化：Copilot 域名精准锁定 [$(date +'%Y-%m-%d')]" || exit 0
+          git push origin main
