@@ -10,6 +10,7 @@
 # =================================================================
 
 name: 3.1_Fetch_Copilot_list_srs_yaml
+
 on:
   schedule:
     - cron: '40 17 * * 5' # 北京时间周六 01:40
@@ -50,7 +51,7 @@ jobs:
           github-cloud.s3.amazonaws.com
 EOF
           
-          # 3. 动态扫描：从 4 个上游源提取 (包括你关注的非中国 AI 规则集)
+          # 3. 动态扫描：从多个权威源提取
           declare -a upstream_sources=(
             "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.yaml"
             "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bing.yaml"
@@ -63,21 +64,20 @@ EOF
           done
 
           # 4. 【核心清洗：外科手术式剔除】
-          # 这一步是满足“查看登录地址必须是中国”的核心保障
           grep -oE "([a-zA-Z0-9][-a-zA-Z0-9]*\.)+[a-zA-Z]{2,}" temp/raw | \
-          # --- 关键：剔除所有涉及身份验证、账户、登录、2FA、验证码的域名 ---
+          # --- 关键：剔除身份验证相关，确保登录 IP 为中国本地 ---
           grep -ivE "login|account|auth|password|registration|profile|msa\.|passport|signup|signin|identity|2fa|verify|verification" | \
-          # --- 关键：剔除微软基础服务根域名，确保其走你 OpenClash 下方的直连规则 ---
+          # --- 关键：剔除微软基础服务根域名，确保 Office/OneDrive 等走直连 ---
           grep -ivE "^bing\.com$|^microsoft\.com$|^live\.com$|^office\.com$|^onedrive\.com$|^outlook\.com$|^skype\.com$|^msn\.com$|^windows\.com$|^visualstudio\.com$|^azure\.com$" | \
-          # --- 关键：剔除静态资源、测速和遥测（直连更快且不干扰登录 IP） ---
+          # --- 关键：剔除静态资源和遥测 ---
           grep -ivE "assets|static|res\.microsoft|telemetry|selfservehost|browser\.events|connectivity" | \
           sort -u | sed 's/^/+./' > copilot.list
 
-          # 5. 生成 YAML (适配 OpenClash)
+          # 5. 生成 YAML
           echo "payload:" > copilot.yaml
           sed 's/^/  - /' copilot.list >> copilot.yaml
 
-          # 6. 编译 SRS (适配 sing-box)
+          # 6. 编译 SRS
           echo '{"version":1,"rules":[{"domain_suffix":[' > temp/m.json
           sed 's/^\+\.//' copilot.list | sed 's/^/"/;s/$/",/' | sed '$ s/,$//' >> temp/m.json
           echo ']}]}' >> temp/m.json
