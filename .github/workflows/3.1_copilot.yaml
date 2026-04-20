@@ -39,6 +39,7 @@ jobs:
           # 写入手动精准列表
           printf "%s\n" \
           "copilot.microsoft.com" \
+          "copilot-api.microsoft.com" \
           "copilot.cloud.microsoft" \
           "copilot.com" \
           "copilot.ai" \
