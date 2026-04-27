@@ -1,4 +1,4 @@
-DOMAIN-SUFFIX,htsc-us.com,DIRECT
-DOMAIN-SUFFIX,htsc-usa.com,DIRECT
-DOMAIN-SUFFIX,htamusa.com,DIRECT
-DOMAIN-SUFFIX,htscusa.com,DIRECT
++.htsc-us.com
++.htsc-usa.com
++.htamusa.com
++.htscusa.com
