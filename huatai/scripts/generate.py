@@ -41,10 +41,8 @@ def write_list(region, domains):
     with open(out, "w") as f:
         for d in domains:
             if d.startswith("KEYWORD:"):
-                # 关键字：直接写关键字本身
                 f.write(d.replace("KEYWORD:", "") + "\n")
             else:
-                # 域名：写成 +.domain.com
                 f.write("+." + d + "\n")
 
 
@@ -79,7 +77,7 @@ def write_srs(region, domains):
 # 生成 huatai/README.md（豪华版）
 # -----------------------------
 def write_readme(all_stats):
-    # 更新时间徽章（注意中间用双连字符避免 URL 解析问题）
+    # 更新时间徽章
     now = datetime.now().strftime("%Y--%m--%d")
     badge = f"https://img.shields.io/badge/Updated-{now}-success"
 
@@ -103,6 +101,7 @@ def write_readme(all_stats):
         file_list += f"- `huatai_{region}.yaml`\n"
         file_list += f"- `huatai_{region}.srs`\n"
 
+    # 写入 huatai/README.md（注意这里用的是 HUATAI_DIR）
     readme_path = os.path.join(HUATAI_DIR, "README.md")
     with open(readme_path, "w") as f:
         f.write("# Huatai Rules\n\n")
@@ -124,7 +123,6 @@ def main():
     for region in REGIONS:
         domains = load_domains(region)
 
-        # 统计
         count_domain = sum(1 for d in domains if not d.startswith("KEYWORD:"))
         count_keyword = sum(1 for d in domains if d.startswith("KEYWORD:"))
         total = len(domains)
@@ -135,12 +133,10 @@ def main():
             "total": total,
         }
 
-        # 输出规则文件（根目录）
         write_list(region, domains)
         write_yaml(region, domains)
         write_srs(region, domains)
 
-    # 生成 huatai/README.md
     write_readme(all_stats)
 
     print("Generate complete.")
@@ -148,3 +144,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
