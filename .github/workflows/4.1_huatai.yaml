@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: "0 18 * * 5"   # 北京时间每周六 02:00
+    - cron: "5 18 * * 5"   # 北京时间每周六 02:00
 
 jobs:
   update:
