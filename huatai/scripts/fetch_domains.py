@@ -129,7 +129,12 @@ def classify(domain):
     return None
 
 def main():
-    results = {"hk": set(), "us": set(), "sg": set()}
+    results = {
+        "cn": set(),
+        "hk": set(),
+        "us": set(),
+        "sg": set(),
+    }
 
     for region, roots in ROOT_DOMAINS.items():
         for root in roots:
@@ -139,7 +144,13 @@ def main():
             results[region] |= fetch_ssl(root)
             results[region] |= fetch_sitemap(root)
 
-    final = {"hk": set(), "us": set(), "sg": set()}
+    final = {
+        "cn": set(),
+        "hk": set(),
+        "us": set(),
+        "sg": set(),
+    }
+
     for region in results:
         for d in results[region]:
             c = classify(d)
