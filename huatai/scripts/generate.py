@@ -20,17 +20,17 @@ def write_list(region, domains):
     with open(f"{ROOT_DIR}/huatai_{region}.list", "w") as f:
         for d in domains:
             if d.startswith("KEYWORD:"):
-                f.write(f"DOMAIN-KEYWORD,{d[8:]},DIRECT\n")
+                f.write(f"{d[8:]}\n")   # KEYWORD 不加 +.
             else:
-                f.write(f"DOMAIN-SUFFIX,{d},DIRECT\n")
+                f.write(f"+.{d}\n")     # 普通域名加 +.
 
 def write_yaml(region, domains):
     payload = []
     for d in domains:
         if d.startswith("KEYWORD:"):
-            payload.append(f"DOMAIN-KEYWORD,{d[8:]}")
+            payload.append(d[8:])
         else:
-            payload.append(f"DOMAIN-SUFFIX,{d}")
+            payload.append(f"+.{d}")
 
     with open(f"{ROOT_DIR}/huatai_{region}.yaml", "w") as f:
         yaml.dump({"payload": payload}, f, allow_unicode=True)
@@ -39,9 +39,9 @@ def write_srs(region, domains):
     with open(f"{ROOT_DIR}/huatai_{region}.srs", "w") as f:
         for d in domains:
             if d.startswith("KEYWORD:"):
-                f.write(f"DOMAIN-KEYWORD,{d[8:]}\n")
+                f.write(f"{d[8:]}\n")
             else:
-                f.write(f"DOMAIN-SUFFIX,{d}\n")
+                f.write(f"+.{d}\n")
 
 def main():
     for region in REGIONS:
