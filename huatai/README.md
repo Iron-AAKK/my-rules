@@ -5,10 +5,10 @@
 ## Statistics
 | Region | Domains | Keywords | Total |
 |--------|---------|----------|-------|
-| CN | 66 | 0 | 66 |
-| HK | 30 | 0 | 30 |
-| US | 26 | 0 | 26 |
-| SG | 9 | 0 | 9 |
+| CN | 32 | 0 | 32 |
+| HK | 169 | 0 | 169 |
+| US | 380 | 0 | 380 |
+| SG | 39 | 0 | 39 |
 
 ## Files
 - `huatai_cn.list`
