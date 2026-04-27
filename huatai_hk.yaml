@@ -1,3 +1,31 @@
 payload:
+  - DOMAIN-SUFFIX,*.htintl.com
+  - DOMAIN-SUFFIX,*.htisec.com
   - DOMAIN-SUFFIX,*.htsc.com.hk
+  - DOMAIN-SUFFIX,api.htisec.com
+  - DOMAIN-SUFFIX,ashton.ns.cloudflare.com
+  - DOMAIN-SUFFIX,cdn.htisec.com
+  - DOMAIN-SUFFIX,equities.htisec.com
+  - DOMAIN-SUFFIX,etta.ns.cloudflare.com
+  - DOMAIN-SUFFIX,htihk.com
+  - DOMAIN-SUFFIX,htintl.com
+  - DOMAIN-SUFFIX,htisec.com
+  - DOMAIN-SUFFIX,htisec.hk
+  - DOMAIN-SUFFIX,htsc-service.com
   - DOMAIN-SUFFIX,htsc.com.hk
+  - DOMAIN-SUFFIX,htsc.hk
+  - DOMAIN-SUFFIX,itnet.taifook.com
+  - DOMAIN-SUFFIX,mail5.htisec.com
+  - DOMAIN-SUFFIX,mail6.htisec.com
+  - DOMAIN-SUFFIX,mail7.htisec.com
+  - DOMAIN-SUFFIX,mail8.htisec.com
+  - DOMAIN-SUFFIX,ns1.8hy.cn
+  - DOMAIN-SUFFIX,ns1.taifook.com
+  - DOMAIN-SUFFIX,ns2.8hy.cn
+  - DOMAIN-SUFFIX,ns2.taifook.com
+  - DOMAIN-SUFFIX,root.8hy.cn
+  - DOMAIN-SUFFIX,tw1.htisec.com
+  - DOMAIN-SUFFIX,tw2.htisec.com
+  - DOMAIN-SUFFIX,www.htisec.com
+  - DOMAIN-SUFFIX,www.htisec.com.hk
+  - DOMAIN-SUFFIX,zhangle-global.com

@@ -1,1 +1,9 @@
+ashton.ns.cloudflare.com
+etta.ns.cloudflare.com
+htisec.com.sg
+htisg.com
+htsc-sg.com
 htsc.com.sg
+htsc.sg
+ns1.julydns.com
+ns2.julydns.com
