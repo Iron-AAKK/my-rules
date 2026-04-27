@@ -5,7 +5,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE, "..", "data")
 ROOT_DIR = os.path.join(BASE, "..", "..")
 
-REGIONS = ["hk", "us", "sg"]
+REGIONS = ["hk", "us", "sg", "cn"]
 
 def load_domains(path):
     domains = []
