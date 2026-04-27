@@ -3,6 +3,9 @@ name: Huatai Domain Auto Update
 on:
   workflow_dispatch:
 
+  schedule:
+    - cron: "0 18 * * 5"
+
 jobs:
   test:
     runs-on: ubuntu-latest
