@@ -11,9 +11,73 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE, "..", "data")
 
 ROOT_DOMAINS = {
-    "hk": ["htsc.com.hk", "htsc.hk", "htisec.com", "htisec.hk"],
-    "us": ["htsc-us.com", "htsc-usa.com", "htamusa.com", "htscusa.com"],
-    "sg": ["htsc.com.sg", "htsc.sg", "htisg.com", "htisec.com.sg"],
+    "cn": [
+        "htsc.com.cn",
+        "htsc.com",
+        "htsc.cn",
+        "95597.com",
+        "htsc-api.com",
+        "htsham.com",
+        "htiam.com",
+        "htf.com",
+        "chinatai.com",
+        "chinatai.com.cn",
+        "htzq.cn",
+
+        # 深度扫描新增（高概率）
+        "static.htsc.com.cn",
+        "api.htsc.com.cn",
+        "cdn.htsc.com.cn",
+        "img.htsc.com.cn",
+
+        # 品牌保护域名
+        "htsc.net",
+        "htsc.org",
+        "htsc.co",
+        "htsc.info",
+        "htsc.biz",
+
+        # 历史遗留域名
+        "htsec.com",
+        "htsec.cn",
+        "htsec.com.cn",
+    ],
+
+    "hk": [
+        "htsc.com.hk",
+        "htsc.hk",
+        "htisec.com",
+        "htisec.hk",
+        "htihk.com",
+        "htintl.com",
+        "zhangle-global.com",
+        "htsc-service.com",
+
+        # 深度扫描新增
+        "www.htisec.com.hk",
+        "api.htisec.com",
+        "cdn.htisec.com",
+    ],
+
+    "us": [
+        "htsc-us.com",
+        "htsc-usa.com",
+        "htamusa.com",
+        "htscusa.com",
+
+        # 深度扫描新增
+        "api.htsc-us.com",
+        "api.htscusa.com",
+        "static.htscusa.com",
+    ],
+
+    "sg": [
+        "htsc.com.sg",
+        "htsc.sg",
+        "htisg.com",
+        "htisec.com.sg",
+        "htsc-sg.com",
+    ],
 }
 
 def run(cmd):
