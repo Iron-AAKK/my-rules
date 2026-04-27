@@ -4,12 +4,38 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: "0 18 * * 5"
+    - cron: "0 18 * * 5"   # 北京时间每周六 02:00
 
 jobs:
-  test:
+  update:
     runs-on: ubuntu-latest
-    steps:
-      - name: Test workflow
-        run: echo "Huatai workflow created successfully."
 
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install requests pyyaml
+
+      - name: Run fetch_domains.py
+        run: |
+          python huatai/scripts/fetch_domains.py
+
+      - name: Run generate.py
+        run: |
+          python huatai/scripts/generate.py
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+
+          git add .
+          git commit -m "Auto update Huatai domains" || echo "No changes to commit"
+          git push
