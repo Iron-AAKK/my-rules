@@ -1,0 +1,41 @@
+name: 4.2_Fetch_WenHua_list_srs_yaml
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "0 18 * * 5"   # 北京时间每周六 02:00 自动运行
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install requests beautifulsoup4 lxml
+
+      - name: Run fetch_domains.py
+        run: |
+          python wenhua/scripts/fetch_domains.py
+
+      - name: Run generate.py
+        run: |
+          python wenhua/scripts/generate.py
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+
+          git add .
+          git commit -m "Auto update WenHua domains" || echo "No changes to commit"
+          git push
