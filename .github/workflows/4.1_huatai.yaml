@@ -1,4 +1,4 @@
-name: Huatai Domain Auto Update
+name: 4.1_Fetch_Huatai_list_srs_yaml
 
 on:
   workflow_dispatch:
