@@ -5,7 +5,7 @@
 ## Statistics
 | Region | Domains | Keywords | Total |
 |--------|---------|----------|-------|
-| CN | 26 | 0 | 26 |
+| CN | 22 | 0 | 22 |
 
 ## Files
 - `wenhua_cn.list`
