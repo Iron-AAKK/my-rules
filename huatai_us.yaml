@@ -1,9 +1,9 @@
 payload:
-  - DOMAIN-SUFFIX,api.htsc-us.com
-  - DOMAIN-SUFFIX,api.htscusa.com
-  - DOMAIN-SUFFIX,htamusa.com
-  - DOMAIN-SUFFIX,htsc-us.com
-  - DOMAIN-SUFFIX,htsc-usa.com
-  - DOMAIN-SUFFIX,htscusa.com
-  - DOMAIN-SUFFIX,static.htscusa.com
-  - DOMAIN-SUFFIX,www.htsc-us.com
+  - +.api.htsc-us.com
+  - +.api.htscusa.com
+  - +.htamusa.com
+  - +.htsc-us.com
+  - +.htsc-usa.com
+  - +.htscusa.com
+  - +.static.htscusa.com
+  - +.www.htsc-us.com
