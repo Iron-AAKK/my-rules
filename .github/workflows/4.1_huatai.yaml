@@ -21,7 +21,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install requests pyyaml
+          pip install requests pyyaml beautifulsoup4 lxml
 
       - name: Run fetch_domains.py
         run: |
