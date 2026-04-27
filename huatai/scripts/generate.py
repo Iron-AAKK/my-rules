@@ -77,11 +77,9 @@ def write_srs(region, domains):
 # 生成 huatai/README.md（豪华版）
 # -----------------------------
 def write_readme(all_stats):
-    # 更新时间徽章
     now = datetime.now().strftime("%Y--%m--%d")
     badge = f"https://img.shields.io/badge/Updated-{now}-success"
 
-    # 统计表格
     table = (
         "| Region | Domains | Keywords | Total |\n"
         "|--------|---------|----------|-------|\n"
@@ -94,14 +92,12 @@ def write_readme(all_stats):
             f"{stat['total']} |\n"
         )
 
-    # 文件说明
     file_list = ""
     for region in REGIONS:
         file_list += f"- `huatai_{region}.list`\n"
         file_list += f"- `huatai_{region}.yaml`\n"
         file_list += f"- `huatai_{region}.srs`\n"
 
-    # 写入 huatai/README.md（注意这里用的是 HUATAI_DIR）
     readme_path = os.path.join(HUATAI_DIR, "README.md")
     with open(readme_path, "w") as f:
         f.write("# Huatai Rules\n\n")
@@ -144,4 +140,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
