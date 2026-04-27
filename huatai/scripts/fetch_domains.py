@@ -3,12 +3,15 @@ import ssl
 import socket
 import re
 import requests
-from urllib.parse import urljoin
 import xml.etree.ElementTree as ET
 import os
 
+# 当前脚本所在目录：huatai/scripts
 BASE = os.path.dirname(os.path.abspath(__file__))
+
+# 数据目录：huatai/data
 DATA_DIR = os.path.join(BASE, "..", "data")
+os.makedirs(DATA_DIR, exist_ok=True)
 
 ROOT_DOMAINS = {
     "cn": [
@@ -80,18 +83,24 @@ ROOT_DOMAINS = {
     ],
 }
 
+
 def run(cmd):
     try:
         return subprocess.check_output(cmd, shell=True, text=True)
-    except:
+    except Exception:
         return ""
 
+
 def extract_domains(text):
+    if not text:
+        return set()
     return set(re.findall(r"[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", text))
+
 
 def fetch_dns(domain):
     output = run(f"dig {domain} ANY +short")
     return extract_domains(output)
+
 
 def fetch_ssl(domain):
     try:
@@ -101,8 +110,9 @@ def fetch_ssl(domain):
                 cert = ssock.getpeercert()
                 san = cert.get("subjectAltName", [])
                 return {d[1] for d in san if d[0] == "DNS"}
-    except:
+    except Exception:
         return set()
+
 
 def fetch_sitemap(domain):
     urls = set()
@@ -115,20 +125,13 @@ def fetch_sitemap(domain):
         root = ET.fromstring(r.text)
         for loc in root.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
             urls |= extract_domains(loc.text)
-    except:
+    except Exception:
         pass
     return urls
 
-def classify(domain):
-    if ".hk" in domain:
-        return "hk"
-    if ".sg" in domain:
-        return "sg"
-    if "usa" in domain or "-us" in domain:
-        return "us"
-    return None
 
 def main():
+    # 每个区域的结果集合
     results = {
         "cn": set(),
         "hk": set(),
@@ -137,33 +140,27 @@ def main():
     }
 
     for region, roots in ROOT_DOMAINS.items():
+        # 先把 ROOT_DOMAINS 本身加入结果（保证至少有这些）
+        results[region] |= set(roots)
+
         for root in roots:
-            print(f"Fetching: {root}")
+            print(f"[{region}] Fetching: {root}")
 
             results[region] |= fetch_dns(root)
             results[region] |= fetch_ssl(root)
             results[region] |= fetch_sitemap(root)
 
-    final = {
-        "cn": set(),
-        "hk": set(),
-        "us": set(),
-        "sg": set(),
-    }
-
-    for region in results:
-        for d in results[region]:
-            c = classify(d)
-            if c:
-                final[c].add(d)
-
-    for region in final:
+    # 直接按区域写回，不再二次分类丢数据
+    for region, domains in results.items():
         path = os.path.join(DATA_DIR, f"{region}-source.txt")
         with open(path, "w") as f:
-            for d in sorted(final[region]):
+            for d in sorted(domains):
                 f.write(d + "\n")
 
+        print(f"[{region}] written {len(domains)} domains to {path}")
+
     print("Done.")
+
 
 if __name__ == "__main__":
     main()
