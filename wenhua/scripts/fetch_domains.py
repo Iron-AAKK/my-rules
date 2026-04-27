@@ -190,7 +190,18 @@ def main():
                 results["cn"].add(d)
 
     # -----------------------------
-    # (3) 过滤垃圾域名
+    # (3) 修复：过滤 *.domain.com / .*.domain.com
+    # -----------------------------
+    fixed = set()
+    for d in results["cn"]:
+        d = d.lstrip("*.")   # 去掉 "*." 或 ".*."
+        d = d.lstrip(".")    # 避免出现 ".domain.com"
+        fixed.add(d)
+
+    results["cn"] = fixed
+
+    # -----------------------------
+    # (4) 过滤垃圾域名
     # -----------------------------
     clean = set()
     for d in results["cn"]:
@@ -199,7 +210,7 @@ def main():
     results["cn"] = clean
 
     # -----------------------------
-    # (4) 写入 wenhua/data/cn-source.txt
+    # (5) 写入 wenhua/data/cn-source.txt
     # -----------------------------
     out = os.path.join(DATA_DIR, "cn-source.txt")
     with open(out, "w") as f:
