@@ -1,10 +1,3 @@
 payload:
-- +.htsc.com.hk
-- +.htsc.hk
-- +.htisec.com
-- +.htisec.hk
-- +.htihk.com
-- +.htintl.com
-- +.zhangle-global.com
-- +.htsc-service.com
-- htsc-static
+  - DOMAIN-SUFFIX,*.htsc.com.hk
+  - DOMAIN-SUFFIX,htsc.com.hk

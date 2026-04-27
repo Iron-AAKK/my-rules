@@ -1,8 +1,2 @@
 payload:
-- +.htsc.com.sg
-- +.htsc.sg
-- +.htisg.com
-- +.htisec.com.sg
-- +.htsc-sg.com
-- htsc-sg
-- htsc.sg
+  - DOMAIN-SUFFIX,htsc.com.sg
