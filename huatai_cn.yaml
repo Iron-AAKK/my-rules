@@ -1,12 +1,9 @@
 payload:
   - DOMAIN-SUFFIX,95597.com
   - DOMAIN-SUFFIX,api.htsc.com.cn
-  - DOMAIN-SUFFIX,app.6139323d5df2beb510fc.js
-  - DOMAIN-SUFFIX,app.bfe0d327117ef811edfca92c5317bb38.css
   - DOMAIN-SUFFIX,cdn.htsc.com.cn
   - DOMAIN-SUFFIX,chinatai.com
   - DOMAIN-SUFFIX,chinatai.com.cn
-  - DOMAIN-SUFFIX,favicon.ico
   - DOMAIN-SUFFIX,htf.com
   - DOMAIN-SUFFIX,htiam.com
   - DOMAIN-SUFFIX,htsc-api.com
@@ -24,9 +21,7 @@ payload:
   - DOMAIN-SUFFIX,htsham.com
   - DOMAIN-SUFFIX,htzq.cn
   - DOMAIN-SUFFIX,img.htsc.com.cn
-  - DOMAIN-SUFFIX,manifest.fa5833dc3e17946c158c.js
   - DOMAIN-SUFFIX,static.htsc.com.cn
-  - DOMAIN-SUFFIX,vendor.678c11a94344e42fcea0.js
   - DOMAIN-SUFFIX,www.htsc.co
   - DOMAIN-SUFFIX,www.htsc.com
   - DOMAIN-SUFFIX,www.htsc.com.cn

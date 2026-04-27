@@ -1,11 +1,8 @@
 95597.com
 api.htsc.com.cn
-app.6139323d5df2beb510fc.js
-app.bfe0d327117ef811edfca92c5317bb38.css
 cdn.htsc.com.cn
 chinatai.com
 chinatai.com.cn
-favicon.ico
 htf.com
 htiam.com
 htsc-api.com
@@ -23,9 +20,7 @@ htsec.com.cn
 htsham.com
 htzq.cn
 img.htsc.com.cn
-manifest.fa5833dc3e17946c158c.js
 static.htsc.com.cn
-vendor.678c11a94344e42fcea0.js
 www.htsc.co
 www.htsc.com
 www.htsc.com.cn
