@@ -172,7 +172,18 @@ def main():
                 results["hk"].add(d)
 
     # -----------------------------
-    # (3) 过滤垃圾域名
+    # (3) 修复：过滤 *.domain.com / .*.domain.com
+    # -----------------------------
+    fixed = set()
+    for d in results["hk"]:
+        d = d.lstrip("*.")   # 去掉 "*." 或 ".*."
+        d = d.lstrip(".")    # 避免出现 ".domain.com"
+        fixed.add(d)
+
+    results["hk"] = fixed
+
+    # -----------------------------
+    # (4) 过滤垃圾域名
     # -----------------------------
     clean = set()
     for d in results["hk"]:
@@ -181,7 +192,7 @@ def main():
     results["hk"] = clean
 
     # -----------------------------
-    # (4) 写入 hafoo/data/hk-source.txt
+    # (5) 写入 hafoo/data/hk-source.txt
     # -----------------------------
     out = os.path.join(DATA_DIR, "hk-source.txt")
     with open(out, "w") as f:
