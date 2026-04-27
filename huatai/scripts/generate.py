@@ -1,10 +1,20 @@
 import os
 from datetime import datetime
 
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(ROOT_DIR, "data")
+# 当前脚本所在目录：huatai/scripts
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# huatai 目录：huatai/
+HUATAI_DIR = os.path.dirname(SCRIPT_DIR)
+
+# 仓库根目录：my-rules/
+ROOT_DIR = os.path.dirname(HUATAI_DIR)
+
+# 数据目录：huatai/data/
+DATA_DIR = os.path.join(HUATAI_DIR, "data")
 
 REGIONS = ["cn", "hk", "us", "sg"]
+
 
 # -----------------------------
 # 读取 source.txt
@@ -24,20 +34,22 @@ def load_domains(region):
 
 
 # -----------------------------
-# 生成 .list
+# 生成 .list（根目录）
 # -----------------------------
 def write_list(region, domains):
     out = os.path.join(ROOT_DIR, f"huatai_{region}.list")
     with open(out, "w") as f:
         for d in domains:
             if d.startswith("KEYWORD:"):
+                # 关键字：直接写关键字本身
                 f.write(d.replace("KEYWORD:", "") + "\n")
             else:
+                # 域名：写成 +.domain.com
                 f.write("+." + d + "\n")
 
 
 # -----------------------------
-# 生成 .yaml
+# 生成 .yaml（根目录）
 # -----------------------------
 def write_yaml(region, domains):
     out = os.path.join(ROOT_DIR, f"huatai_{region}.yaml")
@@ -51,7 +63,7 @@ def write_yaml(region, domains):
 
 
 # -----------------------------
-# 生成 .srs（Surge）
+# 生成 .srs（根目录，Surge）
 # -----------------------------
 def write_srs(region, domains):
     out = os.path.join(ROOT_DIR, f"huatai_{region}.srs")
@@ -64,24 +76,25 @@ def write_srs(region, domains):
 
 
 # -----------------------------
-# 生成 README.md（豪华版）
+# 生成 huatai/README.md（豪华版）
 # -----------------------------
 def write_readme(all_stats):
-    readme_path = os.path.join(ROOT_DIR, "README.md")  # 根目录 README（可选）
-    huatai_readme = os.path.join(ROOT_DIR, "README.md")
-
-    # 更新时间徽章
+    # 更新时间徽章（注意中间用双连字符避免 URL 解析问题）
     now = datetime.now().strftime("%Y--%m--%d")
     badge = f"https://img.shields.io/badge/Updated-{now}-success"
 
-    # 生成表格
+    # 统计表格
     table = (
         "| Region | Domains | Keywords | Total |\n"
         "|--------|---------|----------|-------|\n"
     )
-
     for region, stat in all_stats.items():
-        table += f"| {region.upper()} | {stat['domains']} | {stat['keywords']} | {stat['total']} |\n"
+        table += (
+            f"| {region.upper()} | "
+            f"{stat['domains']} | "
+            f"{stat['keywords']} | "
+            f"{stat['total']} |\n"
+        )
 
     # 文件说明
     file_list = ""
@@ -90,9 +103,9 @@ def write_readme(all_stats):
         file_list += f"- `huatai_{region}.yaml`\n"
         file_list += f"- `huatai_{region}.srs`\n"
 
-    # 写入 README.md（在 huatai 目录下）
-    with open(os.path.join(ROOT_DIR, "README.md"), "w") as f:
-        f.write(f"# Huatai Rules\n\n")
+    readme_path = os.path.join(HUATAI_DIR, "README.md")
+    with open(readme_path, "w") as f:
+        f.write("# Huatai Rules\n\n")
         f.write(f"![Updated]({badge})\n\n")
         f.write("## Statistics\n")
         f.write(table + "\n")
@@ -122,12 +135,12 @@ def main():
             "total": total,
         }
 
-        # 输出规则文件
+        # 输出规则文件（根目录）
         write_list(region, domains)
         write_yaml(region, domains)
         write_srs(region, domains)
 
-    # 生成 README.md（豪华版）
+    # 生成 huatai/README.md
     write_readme(all_stats)
 
     print("Generate complete.")
