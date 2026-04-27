@@ -5,7 +5,7 @@
 ## Statistics
 | Region | Domains | Keywords | Total |
 |--------|---------|----------|-------|
-| HK | 21 | 0 | 21 |
+| HK | 17 | 0 | 17 |
 
 ## Files
 - `hafoo_hk.list`

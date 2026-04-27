@@ -1,15 +1,4 @@
 payload:
-  - +.*.1234567.com.cn
-  - +.*.dfcfw.com
-  - +.*.eastmoney.com
-  - +.*.hafoo.com
-  - +.*.newspush.eastmoney.com
-  - +.*.push2.eastmoney.com
-  - +.*.push2appn.eastmoney.com
-  - +.*.push2delay.eastmoney.com
-  - +.*.push2fund.eastmoney.com
-  - +.*.push2his.eastmoney.com
-  - +.*.push2hisappn.eastmoney.com
   - +.1234567.com.cn
   - +.bdstatics.eastmoney.com
   - +.bdwblog.eastmoney.com
@@ -18,5 +7,12 @@ payload:
   - +.hafoo.com
   - +.hafoo.com.hk
   - +.hafoosec.com
+  - +.newspush.eastmoney.com
+  - +.push2.eastmoney.com
+  - +.push2appn.eastmoney.com
+  - +.push2delay.eastmoney.com
+  - +.push2fund.eastmoney.com
+  - +.push2his.eastmoney.com
+  - +.push2hisappn.eastmoney.com
   - +.www.hafoo.com
   - +.www.hafoo.com.hk
