@@ -28,6 +28,31 @@ REGIONS = ["cn", "hk", "us", "sg"]
 
 
 # ============================================================
+# 域名清洗函数（新增）
+# ============================================================
+def clean_domain(d):
+    """清洗域名，去掉前导点、尾部点、多余点"""
+    if not d:
+        return d
+
+    # 去掉 KEYWORD: 前缀的情况
+    if d.startswith("KEYWORD:"):
+        return d
+
+    # 去掉前导点
+    d = d.lstrip(".")
+
+    # 去掉尾部点
+    d = d.rstrip(".")
+
+    # 去掉连续的多个点
+    while ".." in d:
+        d = d.replace("..", ".")
+
+    return d
+
+
+# ============================================================
 # 读取 source.txt
 # ============================================================
 def load_domains(region):
@@ -41,7 +66,7 @@ def load_domains(region):
         for line in f:
             d = line.strip()
             if d:
-                domains.append(d)
+                domains.append(clean_domain(d))  # ★ 清洗域名
     return domains
 
 
@@ -56,14 +81,12 @@ def write_list(region, domains):
             if d.startswith("KEYWORD:"):
                 f.write(d.replace("KEYWORD:", "") + "\n")
             else:
-                f.write("+." + d + "\n")
+                clean = clean_domain(d)  # ★ 再次清洗
+                f.write("+." + clean + "\n")
 
 
 # ============================================================
 # 生成 .yaml（根目录）
-# YAML 格式必须是：
-# payload:
-#   - +.domain.com
 # ============================================================
 def write_yaml(region, domains):
     """生成 huatai_xx.yaml（你指定的格式）"""
@@ -75,7 +98,8 @@ def write_yaml(region, domains):
                 name = d.replace("KEYWORD:", "")
                 f.write(f"  - +.{name}\n")
             else:
-                f.write(f"  - +.{d}\n")
+                clean = clean_domain(d)  # ★ 再次清洗
+                f.write(f"  - +.{clean}\n")
 
 
 # ============================================================
@@ -89,7 +113,8 @@ def write_srs(region, domains):
             if d.startswith("KEYWORD:"):
                 f.write(f"DOMAIN-KEYWORD,{d.replace('KEYWORD:', '')}\n")
             else:
-                f.write(f"DOMAIN-SUFFIX,{d}\n")
+                clean = clean_domain(d)  # ★ 再次清洗
+                f.write(f"DOMAIN-SUFFIX,{clean}\n")
 
 
 # ============================================================
@@ -98,11 +123,9 @@ def write_srs(region, domains):
 def write_readme(all_stats):
     """生成 huatai/README.md（带统计表）"""
 
-    # 更新时间徽章
     now = datetime.now().strftime("%Y--%m--%d")
     badge = f"https://img.shields.io/badge/Updated-{now}-success"
 
-    # 统计表格
     table = (
         "| Region | Domains | Keywords | Total |\n"
         "|--------|---------|----------|-------|\n"
@@ -115,14 +138,12 @@ def write_readme(all_stats):
             f"{stat['total']} |\n"
         )
 
-    # 文件列表
     file_list = ""
     for region in REGIONS:
         file_list += f"- `huatai_{region}.list`\n"
         file_list += f"- `huatai_{region}.yaml`\n"
         file_list += f"- `huatai_{region}.srs`\n"
 
-    # 写入 README
     readme_path = os.path.join(HUATAI_DIR, "README.md")
     with open(readme_path, "w") as f:
         f.write("# Huatai Rules\n\n")
@@ -144,7 +165,6 @@ def main():
     for region in REGIONS:
         domains = load_domains(region)
 
-        # 统计
         count_domain = sum(1 for d in domains if not d.startswith("KEYWORD:"))
         count_keyword = sum(1 for d in domains if d.startswith("KEYWORD:"))
         total = len(domains)
@@ -155,12 +175,10 @@ def main():
             "total": total,
         }
 
-        # 生成三种格式
         write_list(region, domains)
         write_yaml(region, domains)
         write_srs(region, domains)
 
-    # 生成 README
     write_readme(all_stats)
 
     print("Generate complete.")
