@@ -6,6 +6,9 @@ on:
   schedule:
     - cron: "10 18 * * 5"   # 北京时间每周六 02:10 自动运行
 
+permissions:
+  contents: write
+
 jobs:
   update:
     runs-on: ubuntu-latest
