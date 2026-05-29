@@ -1,50 +1,44 @@
 name: 9.0_Fetch_US_Stock_Backbone_list_srs_yaml
 
 on:
-  # 1. 满足你的定时需求：东8区时间每周六凌晨 05:00 自动运行
-  # 注：GitHub Actions 采用标准 UTC 时间。东8区(北京时间) 05:00 等于 UTC 时间前一天晚上的 21:00
-  schedule:
-    - cron: '0 21 * * 5'
-
-  # 2. 满足你的手动需求：随时可以在 Actions 页面手动点击触发运行
   workflow_dispatch:
+  schedule:
+    - cron: '30 22 * * *'
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: 💾 1. 拉取仓库最新代码
-      uses: actions/checkout@v4
+      - name: 📥 1. 检出仓库代码
+        uses: actions/checkout@v3
 
-    - name: 🐍 2. 部署基础 Python 环境
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+      - name: 🐍 2. 设置 Python 环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
 
-    - name: 📦 3. 安装雷达依赖组件
-      run: |
-        pip install requests
+      - name: 📦 3. 安装依赖
+        run: pip install requests
 
-    - name: 📡 4. 启动深水区网络雷达 (拉取最新子域名)
-      run: |
-        python us_stock_backbone/scripts/fetch_domains.py
+      - name: 📡 4. 启动核心骨干网雷达
+        run: |
+          python us_stock_backbone/scripts/fetch_domains.py
 
-    - name: 🛠️ 5. 启动核心编译器 (双流数据合并与编译)
-      run: |
-        python us_stock_backbone/scripts/generate.py
+      - name: ⚙️ 5. 生成标准格式规则集
+        run: |
+          python us_stock_backbone/scripts/generate.py
 
-    - name: 🚀 6. 将生成的订阅成果推送到仓库
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        
-        # 增加了 us_stock_backbone.srs 的提交
-        git add us_stock_backbone.yaml us_stock_backbone.list us_stock_backbone.srs us_stock_backbone/data/ us_stock_backbone/README.md
-        
-        if ! git diff --cached --quiet; then
-          git commit -m "auto: 自动更新美股骨干网规则集及看板"
-          git push
-        else
-          echo "[-] 没有检测到规则变化，跳过推送。"
-        fi
+      - name: 🚀 6. 将生成的订阅成果推送到仓库
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # 提交成品文件
+          git add us_stock_backbone.yaml us_stock_backbone.list us_stock_backbone.srs us_stock_backbone/data/ us_stock_backbone/README.md
+          
+          if ! git diff --cached --quiet; then
+            git commit -m "auto: 自动更新美股核心骨干网规则集"
+            git push
+          else
+            echo "[-] 规则未变，跳过推送。"
+          fi
