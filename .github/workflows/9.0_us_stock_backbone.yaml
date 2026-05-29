@@ -3,20 +3,27 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '30 22 * * *'
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
+
     steps:
       - uses: actions/checkout@v3
+
       - uses: actions/setup-python@v4
-        with: {python-version: '3.9'}
-      - run: pip install requests
+        with:
+          python-version: '3.9'
+
+      - name: 安装依赖
+        run: |
+          pip install requests aiohttp async-timeout
+
       - name: 执行生成逻辑
         run: |
           python us_stock_backbone/scripts/fetch_domains.py
           python us_stock_backbone/scripts/generate.py
+
       - name: 提交并推送成果
         run: |
           git config --local user.name "github-actions[bot]"
@@ -28,3 +35,4 @@ jobs:
           else
             echo "[-] 无变化，跳过推送"
           fi
+
