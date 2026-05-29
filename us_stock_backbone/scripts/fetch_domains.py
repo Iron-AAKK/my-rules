@@ -3,9 +3,8 @@ import asyncio
 import re
 import os
 
-SEARCH_URL = "https://duckduckgo.com/html/?q={query}"
+DDG_API = "https://duckduckgo.com/?q={query}&format=json"
 
-# 你可以在这里添加更多关键词
 KEYWORDS = [
     "nyse",
     "nasdaq",
@@ -28,16 +27,41 @@ KEYWORDS = [
 
 DOMAIN_REGEX = re.compile(r"https?://([A-Za-z0-9.-]+\.[A-Za-z]{2,})")
 
-async def fetch_search(session, keyword):
-    url = SEARCH_URL.format(query=keyword.replace(" ", "+"))
+# 过滤掉垃圾域名
+BLACKLIST = {
+    "duckduckgo.com",
+    "w3.org",
+    "wikipedia.org",
+    "i.duckduckgo.com",
+}
+
+async def fetch_ddg(session, keyword):
+    url = DDG_API.format(query=keyword.replace(" ", "+"))
     print(f"\n[*] 搜索关键词: {keyword}")
 
     try:
         async with session.get(url, headers={"User-Agent": "Mozilla/5.0"}) as resp:
-            html = await resp.text()
-            domains = set(re.findall(DOMAIN_REGEX, html))
+            data = await resp.json()
+
+            urls = set()
+
+            # 从 JSON 中提取 URL
+            for item in data.get("RelatedTopics", []):
+                if "FirstURL" in item:
+                    urls.add(item["FirstURL"])
+
+            # 提取域名
+            domains = set()
+            for u in urls:
+                m = DOMAIN_REGEX.search(u)
+                if m:
+                    d = m.group(1).lower()
+                    if not any(b in d for b in BLACKLIST):
+                        domains.add(d)
+
             print(f"[+] {keyword} → 发现 {len(domains)} 个域名")
             return domains
+
     except Exception as e:
         print(f"[-] 异常: {e}")
         return set()
@@ -51,7 +75,7 @@ async def main_async():
     DIFF_FILE = os.path.join(DATA_DIR, "us_stock_backbone_diff.txt")
 
     async with aiohttp.ClientSession() as session:
-        tasks = [fetch_search(session, kw) for kw in KEYWORDS]
+        tasks = [fetch_ddg(session, kw) for kw in KEYWORDS]
         results = await asyncio.gather(*tasks)
 
     all_found = set()
