@@ -17,7 +17,6 @@ async def fetch_json(session, url):
             async with SEM:
                 with async_timeout.timeout(CONNECT_TIMEOUT + READ_TIMEOUT):
                     async with session.get(url) as resp:
-
                         if resp.status == 429:
                             print("[!] 429 Too Many Requests，等待 3 秒后重试")
                             await asyncio.sleep(3)
@@ -63,7 +62,8 @@ async def fetch_domain(session, domain):
 
 async def main_async():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    DATA_DIR = os.path.join(BASE_DIR, "..", "data")
+    ROOT_DIR = os.path.dirname(BASE_DIR)
+    DATA_DIR = os.path.join(ROOT_DIR, "data")
     BASE_FILE = os.path.join(DATA_DIR, "us_stock_backbone_base.txt")
     OUTPUT_FILE = os.path.join(DATA_DIR, "us_stock_backbone_discovered.txt")
 
