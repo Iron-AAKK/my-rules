@@ -23,23 +23,31 @@ def main():
                 if raw.startswith("#"):
                     continue
 
-                # 先把 "+-" 这种前缀剥掉（你现在的源文件就是这样）
-                if raw.startswith("+-"):
-                    raw = raw[2:].strip()
+                # 先统一把前缀符号干掉：可能是 "- xxx"、"+ xxx"、"+- xxx" 之类
+                raw = raw.lstrip()
+                # 连续去掉前面的 + 和 -，直到不是这两个符号为止
+                while raw and raw[0] in "+-":
+                    raw = raw[1:].lstrip()
+
+                if not raw:
+                    continue
 
                 upper = raw.upper()
 
                 # ---------- 1) keyword：只进 .srs，不进 list / yaml ----------
                 if upper.startswith("DOMAIN-KEYWORD"):
-                    # 这里保留原始 "DOMAIN-KEYWORD,xxx" 形式，给 .srs 用
-                    keyword_rules.append(raw)
+                    keyword_rules.append(raw)  # 保留原始 "DOMAIN-KEYWORD,xxx"
                     continue
 
                 # ---------- 2) DOMAIN / DOMAIN-SUFFIX：提取出真正的域名 ----------
+                raw_domain = raw
                 if upper.startswith("DOMAIN-SUFFIX,") or upper.startswith("DOMAIN,"):
-                    raw_domain = raw.split(",", 1)[1].strip()
-                else:
-                    raw_domain = raw
+                    parts = raw.split(",", 1)
+                    if len(parts) == 2:
+                        raw_domain = parts[1].strip()
+                    else:
+                        # 格式异常，直接跳过
+                        continue
 
                 # ---------- 3) 清洗域名 ----------
                 d = (
