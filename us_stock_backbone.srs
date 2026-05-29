@@ -1,13 +1,3 @@
-DOMAIN-SUFFIX,# ========== 1. 交易所与核心量化行情源 (高频多媒体流 - 顶置第一现场) ==========
-DOMAIN-SUFFIX,# ========== 2. 券商后台清算商与第三方托管 (核心订单路由 API) ==========
-DOMAIN-SUFFIX,# ========== 3. 资金清算 / 银行网络 / ACH风控 (出入金专用通道) ==========
-DOMAIN-SUFFIX,# ========== 4. 中央清算与交割机构 (底层清算数据对账) ==========
-DOMAIN-SUFFIX,# ========== 5. 股票登记与公司行为 (DRS 托管与股东投票) ==========
-DOMAIN-SUFFIX,# ========== 6. 身份验证与远程开户 (KYC / AML) ==========
-DOMAIN-SUFFIX,# ========== 7. 官方税务核心系统与文件托管服务 ==========
-DOMAIN-SUFFIX,# ========== 8. 金融监管机构与合规审查 ==========
-DOMAIN-SUFFIX,# ========== 9. 可选跨境报税软件辅助组 ==========
-DOMAIN-SUFFIX,# 初始整理日期：20260529
 DOMAIN-SUFFIX,- 1099pro.com
 DOMAIN-SUFFIX,- DOMAIN-KEYWORD,tax-form
 DOMAIN-SUFFIX,- achpayments.com
