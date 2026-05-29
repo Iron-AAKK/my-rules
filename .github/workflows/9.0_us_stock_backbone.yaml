@@ -1,44 +1,21 @@
 name: 9.0_Fetch_US_Stock_Backbone_list_srs_yaml
-
 on:
   workflow_dispatch:
   schedule:
     - cron: '30 22 * * *'
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: 📥 1. 检出仓库代码
-        uses: actions/checkout@v3
-
-      - name: 🐍 2. 设置 Python 环境
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-
-      - name: 📦 3. 安装依赖
-        run: pip install requests
-
-      - name: 📡 4. 启动核心骨干网雷达
-        run: |
-          python us_stock_backbone/scripts/fetch_domains.py
-
-      - name: ⚙️ 5. 生成标准格式规则集
-        run: |
-          python us_stock_backbone/scripts/generate.py
-
-      - name: 🚀 6. 将生成的订阅成果推送到仓库
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with: {python-version: '3.9'}
+      - run: pip install requests
+      - run: python us_stock_backbone/scripts/fetch_domains.py
+      - run: python us_stock_backbone/scripts/generate.py
+      - run: |
           git config --local user.name "github-actions[bot]"
-          
-          # 提交成品文件
-          git add us_stock_backbone.yaml us_stock_backbone.list us_stock_backbone.srs us_stock_backbone/data/ us_stock_backbone/README.md
-          
-          if ! git diff --cached --quiet; then
-            git commit -m "auto: 自动更新美股核心骨干网规则集"
-            git push
-          else
-            echo "[-] 规则未变，跳过推送。"
-          fi
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update Rules" && git push)
