@@ -1,4 +1,4 @@
-name: 9.0 美股核心骨干网自动构建
+name: 9.0_Fetch_US_Stock_Backbone_list_srs_yaml
 
 on:
   # 1. 满足你的定时需求：东8区时间每周六凌晨 05:00 自动运行
