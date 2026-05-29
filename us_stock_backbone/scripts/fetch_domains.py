@@ -11,7 +11,6 @@ READ_TIMEOUT = 5
 SEM = asyncio.Semaphore(CONCURRENCY)
 
 async def fetch_json(session, url):
-    """带超时、重试、限流保护的 JSON 请求"""
     for attempt in range(1, RETRIES + 1):
         try:
             async with SEM:
@@ -43,7 +42,6 @@ async def fetch_json(session, url):
 
 
 async def fetch_domain(session, domain):
-    """扫描单个域名"""
     url = f"https://crt.sh/?q={domain}&output=json"
     print(f"[*] 扫描: {domain}")
 
@@ -61,13 +59,14 @@ async def fetch_domain(session, domain):
 
 
 async def main_async():
+    # BASE_DIR: .../my-rules/us_stock_backbone/scripts
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    ROOT_DIR = os.path.dirname(BASE_DIR)
-    DATA_DIR = os.path.join(ROOT_DIR, "data")
+    RULE_ROOT = os.path.dirname(BASE_DIR)              # .../my-rules/us_stock_backbone
+    DATA_DIR = os.path.join(RULE_ROOT, "data")         # .../my-rules/us_stock_backbone/data
     BASE_FILE = os.path.join(DATA_DIR, "us_stock_backbone_base.txt")
     OUTPUT_FILE = os.path.join(DATA_DIR, "us_stock_backbone_discovered.txt")
 
-    with open(BASE_FILE, "r") as f:
+    with open(BASE_FILE, "r", encoding="utf-8") as f:
         targets = [l.strip() for l in f if l.strip() and not l.startswith("#")]
 
     print(f"[*] 异步扫描启动，共 {len(targets)} 个域名")
@@ -87,7 +86,7 @@ async def main_async():
     for r in results:
         all_found.update(r)
 
-    with open(OUTPUT_FILE, "w") as f:
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(sorted(all_found)))
 
     print(f"[+] 扫描完成，共发现 {len(all_found)} 个域名。")
