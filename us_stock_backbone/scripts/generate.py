@@ -23,25 +23,32 @@ def main():
                 if raw.startswith("#"):
                     continue
 
+                # 先把 "+-" 这种前缀剥掉（你现在的源文件就是这样）
+                if raw.startswith("+-"):
+                    raw = raw[2:].strip()
+
                 upper = raw.upper()
 
-                # ---------- 关键：keyword 只进 .srs ----------
+                # ---------- 1) keyword：只进 .srs，不进 list / yaml ----------
                 if upper.startswith("DOMAIN-KEYWORD"):
+                    # 这里保留原始 "DOMAIN-KEYWORD,xxx" 形式，给 .srs 用
                     keyword_rules.append(raw)
                     continue
 
-                # ---------- 过滤掉 DOMAIN-SUFFIX,domain ----------
-                if upper.startswith("DOMAIN-SUFFIX,"):
-                    raw = raw.split(",", 1)[1].strip()
+                # ---------- 2) DOMAIN / DOMAIN-SUFFIX：提取出真正的域名 ----------
+                if upper.startswith("DOMAIN-SUFFIX,") or upper.startswith("DOMAIN,"):
+                    raw_domain = raw.split(",", 1)[1].strip()
+                else:
+                    raw_domain = raw
 
-                # ---------- 清洗域名 ----------
+                # ---------- 3) 清洗域名 ----------
                 d = (
-                    raw.replace("+.", "")
-                       .lstrip(".")
-                       .strip()
+                    raw_domain.replace("+.", "")  # 去掉前面的 +.
+                             .lstrip(".")        # 去掉多余的点
+                             .strip()
                 )
 
-                # ---------- 再次过滤 keyword 残留 ----------
+                # 防御：如果还有 keyword 残留，直接丢弃
                 if d.upper().startswith("DOMAIN-KEYWORD"):
                     continue
 
@@ -54,12 +61,14 @@ def main():
     sorted_domains = sorted(domains)
 
     # ---------- 1) us_stock_backbone.list ----------
+    # 参考 wenhua_cn.list：每行 "+.domain"
     list_path = os.path.join(REPO_ROOT, "us_stock_backbone.list")
     with open(list_path, "w", encoding="utf-8") as f:
         for d in sorted_domains:
             f.write(f"+.{d}\n")
 
     # ---------- 2) us_stock_backbone.yaml ----------
+    # 参考 wenhua_cn.yaml：payload: - +.domain
     yaml_path = os.path.join(REPO_ROOT, "us_stock_backbone.yaml")
     with open(yaml_path, "w", encoding="utf-8") as f:
         f.write("payload:\n")
@@ -67,6 +76,7 @@ def main():
             f.write(f"  - +.{d}\n")
 
     # ---------- 3) us_stock_backbone.srs ----------
+    # keyword 在上，域名用 DOMAIN-SUFFIX,domain
     srs_path = os.path.join(REPO_ROOT, "us_stock_backbone.srs")
     with open(srs_path, "w", encoding="utf-8") as f:
         for rule in keyword_rules:
