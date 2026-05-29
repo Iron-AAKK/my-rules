@@ -3,12 +3,16 @@ import aiohttp
 import async_timeout
 import os
 
-CONCURRENCY = 10
+# ========== 限流参数（方案 1） ==========
+CONCURRENCY = 1          # 并发从 10 → 1
 RETRIES = 3
-CONNECT_TIMEOUT = 5
-READ_TIMEOUT = 5
+CONNECT_TIMEOUT = 10     # crt.sh 很慢，适当加长
+READ_TIMEOUT = 10
+REQUEST_DELAY = 2        # 每次请求后 sleep 2 秒
+DOMAIN_DELAY = 1         # 每个域名之间再 sleep 1 秒
 
 SEM = asyncio.Semaphore(CONCURRENCY)
+
 
 def clean_domain(line: str):
     """
@@ -20,7 +24,6 @@ def clean_domain(line: str):
     """
     line = line.strip()
 
-    # 跳过注释
     if not line or line.startswith("#"):
         return None
 
@@ -33,11 +36,9 @@ def clean_domain(line: str):
         parts = line.split(",", 1)
         line = parts[1].strip()
 
-    # 过滤 keyword 行
     if "KEYWORD" in line.upper():
         return None
 
-    # 必须包含点
     if "." not in line:
         return None
 
@@ -50,9 +51,11 @@ async def fetch_json(session, url):
             async with SEM:
                 with async_timeout.timeout(CONNECT_TIMEOUT + READ_TIMEOUT):
                     async with session.get(url) as resp:
+
+                        # 限流处理
                         if resp.status == 429:
-                            print("[!] 429 Too Many Requests，等待 3 秒后重试")
-                            await asyncio.sleep(3)
+                            print("[!] 429 Too Many Requests，等待 5 秒后重试")
+                            await asyncio.sleep(5)
                             continue
 
                         if resp.status != 200:
@@ -63,7 +66,12 @@ async def fetch_json(session, url):
                             print("[-] 非 JSON 响应（可能被限流）")
                             return None
 
-                        return await resp.json()
+                        data = await resp.json()
+
+                        # 每次请求后强制延迟
+                        await asyncio.sleep(REQUEST_DELAY)
+
+                        return data
 
         except asyncio.TimeoutError:
             print(f"[-] 请求超时（尝试 {attempt}/{RETRIES}）")
@@ -91,6 +99,10 @@ async def fetch_domain(session, domain):
             results.add(name)
 
     print(f"[+] {domain} → 发现 {len(results)} 个子域名")
+
+    # 每个域名之间再延迟
+    await asyncio.sleep(DOMAIN_DELAY)
+
     return domain, sorted(results)
 
 
@@ -113,7 +125,7 @@ async def main_async():
 
     print(f"[*] 异步扫描启动，共 {len(targets)} 个基础域名")
 
-    connector = aiohttp.TCPConnector(limit=50, ssl=False)
+    connector = aiohttp.TCPConnector(limit=10, ssl=False)
     timeout = aiohttp.ClientTimeout(
         total=None,
         connect=CONNECT_TIMEOUT,
@@ -121,8 +133,10 @@ async def main_async():
     )
 
     async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
-        tasks = [fetch_domain(session, t) for t in targets]
-        results = await asyncio.gather(*tasks)
+        results = []
+        for t in targets:
+            r = await fetch_domain(session, t)
+            results.append(r)
 
     # 汇总所有发现的域名
     all_found = set()
