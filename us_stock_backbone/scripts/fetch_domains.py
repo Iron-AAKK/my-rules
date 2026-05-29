@@ -10,6 +10,40 @@ READ_TIMEOUT = 5
 
 SEM = asyncio.Semaphore(CONCURRENCY)
 
+def clean_domain(line: str):
+    """
+    清洗 base.txt 的每一行：
+    - 去掉前缀符号（-、空格）
+    - 去掉 DOMAIN-SUFFIX, DOMAIN, DOMAIN-KEYWORD
+    - 去掉注释
+    - 返回纯域名
+    """
+    line = line.strip()
+
+    # 跳过注释
+    if not line or line.startswith("#"):
+        return None
+
+    # 去掉前缀符号
+    while line and line[0] in "-+ ":
+        line = line[1:].lstrip()
+
+    # 去掉 DOMAIN-SUFFIX, DOMAIN, DOMAIN-KEYWORD
+    if "," in line:
+        parts = line.split(",", 1)
+        line = parts[1].strip()
+
+    # 过滤 keyword 行
+    if "KEYWORD" in line.upper():
+        return None
+
+    # 必须包含点
+    if "." not in line:
+        return None
+
+    return line
+
+
 async def fetch_json(session, url):
     for attempt in range(1, RETRIES + 1):
         try:
@@ -69,9 +103,13 @@ async def main_async():
     OUTPUT_FILE = os.path.join(DATA_DIR, "us_stock_backbone_discovered.txt")
     DIFF_FILE = os.path.join(DATA_DIR, "us_stock_backbone_diff.txt")
 
-    # 读取基础域名
+    # 读取并清洗基础域名
+    targets = []
     with open(BASE_FILE, "r", encoding="utf-8") as f:
-        targets = [l.strip() for l in f if l.strip() and not l.startswith("#")]
+        for line in f:
+            d = clean_domain(line)
+            if d:
+                targets.append(d)
 
     print(f"[*] 异步扫描启动，共 {len(targets)} 个基础域名")
 
@@ -100,9 +138,7 @@ async def main_async():
 
     print(f"\n[+] 扫描完成，共发现 {len(all_found)} 个唯一子域名。")
 
-    # -------------------------
-    #  Diff 对比（新增域名）
-    # -------------------------
+    # Diff 对比（新增域名）
     old_set = set()
     if os.path.exists(OUTPUT_FILE):
         with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
@@ -116,13 +152,10 @@ async def main_async():
 
     print(f"[+] 新增域名 {len(diff)} 个（已写入 diff.txt）")
 
-    # -------------------------
-    #  打印扫描统计报告
-    # -------------------------
+    # 打印扫描统计报告
     print("\n========== 扫描统计报告 ==========")
     for d, count in per_domain_stats:
         print(f"{d:<30} → {count} 个子域名")
-
     print("=================================")
 
 
