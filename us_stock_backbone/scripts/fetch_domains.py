@@ -1,109 +1,49 @@
 import asyncio
 import aiohttp
-import async_timeout
 import os
+import time
 
-# ========== 限流参数（方案 1） ==========
-CONCURRENCY = 1          # 并发从 10 → 1
-RETRIES = 3
-CONNECT_TIMEOUT = 10     # crt.sh 很慢，适当加长
-READ_TIMEOUT = 10
-REQUEST_DELAY = 2        # 每次请求后 sleep 2 秒
-DOMAIN_DELAY = 1         # 每个域名之间再 sleep 1 秒
+API_URL = "https://api.certspotter.com/v1/issuances"
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (compatible; CertSpotterFetcher/1.0)"
+}
 
-SEM = asyncio.Semaphore(CONCURRENCY)
+async def fetch_certspotter(session, domain):
+    params = {
+        "domain": domain,
+        "include_subdomains": "true",
+        "expand": "dns_names"
+    }
 
-
-def clean_domain(line: str):
-    """
-    清洗 base.txt 的每一行：
-    - 去掉前缀符号（-、空格）
-    - 去掉 DOMAIN-SUFFIX, DOMAIN, DOMAIN-KEYWORD
-    - 去掉注释
-    - 返回纯域名
-    """
-    line = line.strip()
-
-    if not line or line.startswith("#"):
-        return None
-
-    # 去掉前缀符号
-    while line and line[0] in "-+ ":
-        line = line[1:].lstrip()
-
-    # 去掉 DOMAIN-SUFFIX, DOMAIN, DOMAIN-KEYWORD
-    if "," in line:
-        parts = line.split(",", 1)
-        line = parts[1].strip()
-
-    if "KEYWORD" in line.upper():
-        return None
-
-    if "." not in line:
-        return None
-
-    return line
-
-
-async def fetch_json(session, url):
-    for attempt in range(1, RETRIES + 1):
-        try:
-            async with SEM:
-                with async_timeout.timeout(CONNECT_TIMEOUT + READ_TIMEOUT):
-                    async with session.get(url) as resp:
-
-                        # 限流处理
-                        if resp.status == 429:
-                            print("[!] 429 Too Many Requests，等待 5 秒后重试")
-                            await asyncio.sleep(5)
-                            continue
-
-                        if resp.status != 200:
-                            print(f"[-] 非 200 响应: {resp.status}")
-                            return None
-
-                        if "application/json" not in resp.headers.get("Content-Type", ""):
-                            print("[-] 非 JSON 响应（可能被限流）")
-                            return None
-
-                        data = await resp.json()
-
-                        # 每次请求后强制延迟
-                        await asyncio.sleep(REQUEST_DELAY)
-
-                        return data
-
-        except asyncio.TimeoutError:
-            print(f"[-] 请求超时（尝试 {attempt}/{RETRIES}）")
-        except Exception as e:
-            print(f"[-] 异常: {e}")
-
-        await asyncio.sleep(1)
-
-    return None
-
-
-async def fetch_domain(session, domain):
-    url = f"https://crt.sh/?q={domain}&output=json"
     print(f"\n[*] 扫描: {domain}")
 
-    data = await fetch_json(session, url)
-    if not data:
-        print(f"[!] {domain} 扫描失败（无数据）")
+    try:
+        async with session.get(API_URL, params=params, headers=HEADERS) as resp:
+            if resp.status == 429:
+                print("[!] 429 Too Many Requests，等待 5 秒后重试")
+                await asyncio.sleep(5)
+                return await fetch_certspotter(session, domain)
+
+            if resp.status != 200:
+                print(f"[-] 非 200 响应: {resp.status}")
+                return domain, []
+
+            data = await resp.json()
+
+            found = set()
+            for item in data:
+                for name in item.get("dns_names", []):
+                    name = name.lower().replace("*.", "")
+                    if name.endswith(domain):
+                        found.add(name)
+
+            print(f"[+] {domain} → 发现 {len(found)} 个子域名")
+            await asyncio.sleep(1)
+            return domain, sorted(found)
+
+    except Exception as e:
+        print(f"[-] 异常: {e}")
         return domain, []
-
-    results = set()
-    for item in data:
-        name = item.get("name_value", "").lower().replace("*.", "")
-        if name.endswith(domain):
-            results.add(name)
-
-    print(f"[+] {domain} → 发现 {len(results)} 个子域名")
-
-    # 每个域名之间再延迟
-    await asyncio.sleep(DOMAIN_DELAY)
-
-    return domain, sorted(results)
 
 
 async def main_async():
@@ -115,30 +55,19 @@ async def main_async():
     OUTPUT_FILE = os.path.join(DATA_DIR, "us_stock_backbone_discovered.txt")
     DIFF_FILE = os.path.join(DATA_DIR, "us_stock_backbone_diff.txt")
 
-    # 读取并清洗基础域名
-    targets = []
+    # 读取域名
     with open(BASE_FILE, "r", encoding="utf-8") as f:
-        for line in f:
-            d = clean_domain(line)
-            if d:
-                targets.append(d)
+        domains = [l.strip() for l in f if l.strip() and not l.startswith("#")]
 
-    print(f"[*] 异步扫描启动，共 {len(targets)} 个基础域名")
+    print(f"[*] CertSpotter 扫描启动，共 {len(domains)} 个域名")
 
-    connector = aiohttp.TCPConnector(limit=10, ssl=False)
-    timeout = aiohttp.ClientTimeout(
-        total=None,
-        connect=CONNECT_TIMEOUT,
-        sock_read=READ_TIMEOUT
-    )
-
-    async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
+    async with aiohttp.ClientSession() as session:
         results = []
-        for t in targets:
-            r = await fetch_domain(session, t)
+        for d in domains:
+            r = await fetch_certspotter(session, d)
             results.append(r)
 
-    # 汇总所有发现的域名
+    # 汇总
     all_found = set()
     per_domain_stats = []
 
@@ -152,21 +81,20 @@ async def main_async():
 
     print(f"\n[+] 扫描完成，共发现 {len(all_found)} 个唯一子域名。")
 
-    # Diff 对比（新增域名）
+    # diff
     old_set = set()
     if os.path.exists(OUTPUT_FILE):
         with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
             old_set = {l.strip() for l in f if l.strip()}
 
-    new_set = all_found
-    diff = sorted(new_set - old_set)
+    diff = sorted(all_found - old_set)
 
     with open(DIFF_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(diff))
 
     print(f"[+] 新增域名 {len(diff)} 个（已写入 diff.txt）")
 
-    # 打印扫描统计报告
+    # 统计
     print("\n========== 扫描统计报告 ==========")
     for d, count in per_domain_stats:
         print(f"{d:<30} → {count} 个子域名")
