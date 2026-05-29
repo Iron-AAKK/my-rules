@@ -26,12 +26,12 @@ def main():
 
                 upper = raw.upper()
 
-                # DOMAIN-KEYWORD 只保留给 .srs，不参与域名集合
+                # 1) DOMAIN-KEYWORD 只保留给 .srs，不参与域名集合
                 if upper.startswith("DOMAIN-KEYWORD"):
                     keyword_rules.append(raw)
                     continue
 
-                # 处理真正的域名
+                # 2) 处理真正的域名
                 d = (
                     raw.replace("DOMAIN-SUFFIX,", "")
                        .replace("DOMAIN,", "")
@@ -47,13 +47,15 @@ def main():
 
     sorted_domains = sorted(domains)
 
-    # 1) my-rules/us_stock_backbone.list —— 对齐 futu.list / wenhua_cn.list
+    # ---------- 1) my-rules/us_stock_backbone.list ----------
+    # 对齐 futu.list / wenhua_cn.list：每行 +.domain，且不含 keyword
     list_path = os.path.join(REPO_ROOT, "us_stock_backbone.list")
     with open(list_path, "w", encoding="utf-8") as f:
         for d in sorted_domains:
             f.write(f"+.{d}\n")
 
-    # 2) my-rules/us_stock_backbone.srs —— 先写 DOMAIN-KEYWORD，再写 DOMAIN-SUFFIX,domain
+    # ---------- 2) my-rules/us_stock_backbone.srs ----------
+    # 先写 DOMAIN-KEYWORD 行，再写 DOMAIN-SUFFIX,domain
     srs_path = os.path.join(REPO_ROOT, "us_stock_backbone.srs")
     with open(srs_path, "w", encoding="utf-8") as f:
         for rule in keyword_rules:
@@ -61,14 +63,15 @@ def main():
         for d in sorted_domains:
             f.write(f"DOMAIN-SUFFIX,{d}\n")
 
-    # 3) my-rules/us_stock_backbone.yaml —— 对齐 wenhua_cn.yaml：payload: - .domain
+    # ---------- 3) my-rules/us_stock_backbone.yaml ----------
+    # 对齐 wenhua_cn.yaml：payload: - .domain，不含 keyword
     yaml_path = os.path.join(REPO_ROOT, "us_stock_backbone.yaml")
     with open(yaml_path, "w", encoding="utf-8") as f:
         f.write("payload:\n")
         for d in sorted_domains:
             f.write(f"  - .{d}\n")
 
-    # README 仍然放在 us_stock_backbone/ 目录下（不是仓库根）
+    # ---------- 4) README 只写在 my-rules/us_stock_backbone/ 目录 ----------
     readme_path = os.path.join(RULE_ROOT, "README.md")
 
     def get_kb(path: str) -> str:
