@@ -1,4 +1,5 @@
 name: 9.0_Fetch_US_Stock_Backbone_list_srs_yaml
+
 on:
   workflow_dispatch:
   schedule:
@@ -30,9 +31,8 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git add .
           if ! git diff --quiet --cached; then
-            git commit -m "auto: update rules & readme"
+            git commit -m "auto: update US stock backbone rules"
             git push
           else
             echo "[-] 无变化，跳过推送"
           fi
-
