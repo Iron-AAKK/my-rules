@@ -1,19 +1,19 @@
 # US Stock Backbone Rules
 
-![Updated](https://img.shields.io/badge/Updated-2026--05--29-green)
+![Updated](https://img.shields.io/badge/Updated-2026-05-29-green)
 
 ### Statistics
 
 | Category | Type | Count |
 | :--- | :--- | :--- |
-| Base | Manual | 93 |
-| Radar | Auto | 0 |
-| **Total** | **Combined** | **93** |
+| Base | Manual | 258 |
+| Total | Combined | **258** |
 
 ### Files
 
 - [us_stock_backbone.yaml](us_stock_backbone.yaml)
 - [us_stock_backbone.list](us_stock_backbone.list)
+- [us_stock_backbone.srs](us_stock_backbone.srs)
 
 ### Auto Update
 
