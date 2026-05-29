@@ -1,0 +1,52 @@
+name: 9.0 美股核心骨干网自动构建
+
+on:
+  # 1. 满足你的定时需求：东8区时间每周六凌晨 05:00 自动运行
+  # 注：GitHub Actions 采用标准 UTC 时间。东8区(北京时间) 05:00 等于 UTC 时间前一天晚上的 21:00
+  schedule:
+    - cron: '0 21 * * 5'
+
+  # 2. 满足你的手动需求：随时可以在 Actions 页面手动点击触发运行
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 💾 1. 拉取仓库最新代码
+      uses: actions/checkout@v4
+
+    - name: 🐍 2. 部署基础 Python 环境
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: 📦 3. 安装雷达依赖组件
+      run: |
+        pip install requests
+
+    - name: 📡 4. 启动深水区网络雷达 (拉取最新子域名)
+      run: |
+        python us_stock_backbone/scripts/fetch_domains.py
+
+    - name: 🛠️ 5. 启动核心编译器 (双流数据合并与编译)
+      run: |
+        python us_stock_backbone/scripts/generate.py
+
+    - name: 🚀 6. 将生成的订阅成果推送到仓库
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        
+        # 捕获所有变动（包含根目录生成的订阅和 data 里的雷达数据）
+        git add us_stock_backbone.yaml us_stock_backbone.list us_stock_backbone/data/ us_stock_backbone/README.md
+        
+        # 只有在有新域名或看板更新时才提交，防止无意义的空跑报错
+        if ! git diff --cached --quiet; then
+          git commit -m "auto: 自动更新美股骨干网规则集及看板 (${{ github.event_name == 'schedule' && '定时周更' || '手动触发' }})"
+          git push
+          print("[+] 成果已成功推送至主分支，规则已全网生效！")
+        else
+          print("[i] 检测到规则无任何变化，跳过本次推送。")
+        fi
