@@ -1,94 +1,67 @@
-import os
-import re
 import requests
-from datetime import datetime
+import json
+import os
 
-# ==============================================================================
-# 路径解析 (完全对齐你的动态路径标准)
-# ==============================================================================
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
-DATA_DIR = os.path.join(PROJECT_DIR, "data")
-
-# ==============================================================================
-# 雷达扫描核心目标群 (针对根域名进行全子域名穿透扫描)
-# ==============================================================================
-TARGET_ROOTS = [
-    "nyse.com",
-    "nasdaq.com",
-    "apexclearing.com",
-    "drivewealth.com",
-    "cboe.com",
-    "cmegroup.com",
-    "plaid.com"
-]
+# 定义你的“骨干网核心关键词”
+# 只有包含这些关键词的子域名才会被录入，过滤掉垃圾数据
+KEYWORDS = ['api', 'quote', 'stock', 'trade', 'data', 'web', 'connect']
 
 def fetch_subdomains_from_crt(domain):
-    """通过 crt.sh 证书日志网关，扫描捕获该域名旗下所有隐藏的子域名"""
-    print(f"[+] 雷达正在扫描探测: {domain} ...")
-    url = f"https://crt.sh/?q=%.{domain}&output=json"
-    subdomains = set()
+    url = f"https://crt.sh/?q={domain}&output=json"
     try:
-        # 设置15秒超时，防止网络死锁
         response = requests.get(url, timeout=15)
-        if response.status_code == 200:
-            data = response.json()
-            for item in data:
-                # 提取证书中的常用名(Common Name)或匹配名
-                name = item.get("name_value", "").lower()
-                # 可能会有通配符或多域名换行，进行清洗
-                names = name.split("\n")
-                for n in names:
-                    n = n.strip()
-                    if n.startswith("*."):
-                        n = n[2:]
-                    # 确保抓到的是合法的、属于该目标的域名
-                    if n and n.endswith(domain) and re.match(r'^[a-z0-9.-]+$', n):
-                        subdomains.add(n)
-        print(f"[v] {domain} 扫描完毕，捕获到 {len(subdomains)} 个活跃域名")
+        if response.status_code != 200:
+            return []
+        
+        data = response.json()
+        subdomains = set()
+        
+        for entry in data:
+            name = entry.get("name_value", "").lower()
+            # 过滤逻辑：
+            # 1. 必须以目标域名结尾
+            # 2. 必须包含定义的关键词之一
+            if name.endswith(domain) and any(kw in name for kw in KEYWORDS):
+                subdomains.add(name)
+        
+        return list(subdomains)
     except Exception as e:
-        print(f"[-] 警告: {domain} 雷达扫描超时或失败 (原因: {e})")
-    return subdomains
+        print(f"[-] 扫描出错 {domain}: {e}")
+        return []
 
 def main():
-    all_discovered_domains = set()
+    # 根目录路径
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
+    DATA_DIR = os.path.join(PROJECT_DIR, "data")
+    OUTPUT_FILE = os.path.join(DATA_DIR, "us_stock_backbone_discovered.txt")
+    BASE_FILE = os.path.join(DATA_DIR, "us_stock_backbone_base.txt")
 
-    # 1. 启动雷达，遍历扫荡所有核心目标
-    for root in TARGET_ROOTS:
-        discovered = fetch_subdomains_from_crt(root)
-        all_discovered_domains.update(discovered)
-
-    if not all_discovered_domains:
-        print("[-] 本次雷达扫描未发现新数据，终止写入。")
+    # 读取底座中的目标域名进行扫描
+    if not os.path.exists(BASE_FILE):
         return
 
-    # 2. 转换成标准的规则格式 (DOMAIN-SUFFIX 或 DOMAIN)
-    formatted_rules = set()
-    for domain in all_discovered_domains:
-        # 如果是核心根域名本身，走 SUFFIX 拦截全网
-        if domain in TARGET_ROOTS:
-            formatted_rules.add(f"- DOMAIN-SUFFIX,{domain}")
-        else:
-            # 精确检测到的子域名，用 DOMAIN 精准直连，防止大范围误杀
-            formatted_rules.add(f"- DOMAIN,{domain}")
+    targets = []
+    with open(BASE_FILE, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            # 简单提取域名主体
+            if line and not line.startswith("#"):
+                clean = line.replace("DOMAIN-SUFFIX,", "").replace("+.", "")
+                targets.append(clean)
 
-    # 3. 定位自动存储路径，写入 us_stock_backbone_discovered.txt
-    output_file = os.path.join(DATA_DIR, "us_stock_backbone_discovered.txt")
-    
-    # 排序并写入
-    sorted_rules = sorted(list(formatted_rules))
-    update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write(f"# ==========================================================\n")
-        f.write(f"# 🔴 雷达自动捕获的美股高频基建动态域名库\n")
-        f.write(f"# 最后扫描更新时间: {update_time}\n")
-        f.write(f"# 数量: {len(sorted_rules)}\n")
-        f.write(f"# ==========================================================\n")
-        for rule in sorted_rules:
-            f.write(f"{rule}\n")
+    all_discovered = set()
+    for target in targets:
+        print(f"[*] 正在扫描: {target}")
+        found = fetch_subdomains_from_crt(target)
+        all_discovered.update(found)
 
-    print(f"[+] 雷达扫描数据已完美归盘: {output_file} (总计: {len(sorted_rules)} 条规则)")
+    # 写入发现的结果
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        for domain in sorted(list(all_discovered)):
+            f.write(f"{domain}\n")
+    
+    print(f"[+] 扫描完成，共发现 {len(all_discovered)} 个核心骨干域名。")
 
 if __name__ == "__main__":
     main()
