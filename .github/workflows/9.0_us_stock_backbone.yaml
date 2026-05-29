@@ -39,14 +39,12 @@ jobs:
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         
-        # 捕获所有变动（包含根目录生成的订阅和 data 里的雷达数据）
-        git add us_stock_backbone.yaml us_stock_backbone.list us_stock_backbone/data/ us_stock_backbone/README.md
+        # 增加了 us_stock_backbone.srs 的提交
+        git add us_stock_backbone.yaml us_stock_backbone.list us_stock_backbone.srs us_stock_backbone/data/ us_stock_backbone/README.md
         
-        # 只有在有新域名或看板更新时才提交，防止无意义的空跑报错
         if ! git diff --cached --quiet; then
-          git commit -m "auto: 自动更新美股骨干网规则集及看板 (${{ github.event_name == 'schedule' && '定时周更' || '手动触发' }})"
+          git commit -m "auto: 自动更新美股骨干网规则集及看板"
           git push
-          print("[+] 成果已成功推送至主分支，规则已全网生效！")
         else
-          print("[i] 检测到规则无任何变化，跳过本次推送。")
+          echo "[-] 没有检测到规则变化，跳过推送。"
         fi
