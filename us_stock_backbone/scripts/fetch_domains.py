@@ -43,11 +43,12 @@ async def fetch_json(session, url):
 
 async def fetch_domain(session, domain):
     url = f"https://crt.sh/?q={domain}&output=json"
-    print(f"[*] 扫描: {domain}")
+    print(f"\n[*] 扫描: {domain}")
 
     data = await fetch_json(session, url)
     if not data:
-        return []
+        print(f"[!] {domain} 扫描失败（无数据）")
+        return domain, []
 
     results = set()
     for item in data:
@@ -55,21 +56,24 @@ async def fetch_domain(session, domain):
         if name.endswith(domain):
             results.add(name)
 
-    return results
+    print(f"[+] {domain} → 发现 {len(results)} 个子域名")
+    return domain, sorted(results)
 
 
 async def main_async():
-    # BASE_DIR: .../my-rules/us_stock_backbone/scripts
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    RULE_ROOT = os.path.dirname(BASE_DIR)              # .../my-rules/us_stock_backbone
-    DATA_DIR = os.path.join(RULE_ROOT, "data")         # .../my-rules/us_stock_backbone/data
+    RULE_ROOT = os.path.dirname(BASE_DIR)
+    DATA_DIR = os.path.join(RULE_ROOT, "data")
+
     BASE_FILE = os.path.join(DATA_DIR, "us_stock_backbone_base.txt")
     OUTPUT_FILE = os.path.join(DATA_DIR, "us_stock_backbone_discovered.txt")
+    DIFF_FILE = os.path.join(DATA_DIR, "us_stock_backbone_diff.txt")
 
+    # 读取基础域名
     with open(BASE_FILE, "r", encoding="utf-8") as f:
         targets = [l.strip() for l in f if l.strip() and not l.startswith("#")]
 
-    print(f"[*] 异步扫描启动，共 {len(targets)} 个域名")
+    print(f"[*] 异步扫描启动，共 {len(targets)} 个基础域名")
 
     connector = aiohttp.TCPConnector(limit=50, ssl=False)
     timeout = aiohttp.ClientTimeout(
@@ -82,14 +86,44 @@ async def main_async():
         tasks = [fetch_domain(session, t) for t in targets]
         results = await asyncio.gather(*tasks)
 
+    # 汇总所有发现的域名
     all_found = set()
-    for r in results:
-        all_found.update(r)
+    per_domain_stats = []
 
+    for domain, subs in results:
+        per_domain_stats.append((domain, len(subs)))
+        all_found.update(subs)
+
+    # 写入 discovered.txt
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write("\n".join(sorted(all_found)))
 
-    print(f"[+] 扫描完成，共发现 {len(all_found)} 个域名。")
+    print(f"\n[+] 扫描完成，共发现 {len(all_found)} 个唯一子域名。")
+
+    # -------------------------
+    #  Diff 对比（新增域名）
+    # -------------------------
+    old_set = set()
+    if os.path.exists(OUTPUT_FILE):
+        with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+            old_set = {l.strip() for l in f if l.strip()}
+
+    new_set = all_found
+    diff = sorted(new_set - old_set)
+
+    with open(DIFF_FILE, "w", encoding="utf-8") as f:
+        f.write("\n".join(diff))
+
+    print(f"[+] 新增域名 {len(diff)} 个（已写入 diff.txt）")
+
+    # -------------------------
+    #  打印扫描统计报告
+    # -------------------------
+    print("\n========== 扫描统计报告 ==========")
+    for d, count in per_domain_stats:
+        print(f"{d:<30} → {count} 个子域名")
+
+    print("=================================")
 
 
 if __name__ == "__main__":
