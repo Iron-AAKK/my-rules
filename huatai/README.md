@@ -1,6 +1,6 @@
 # Huatai Rules
 
-![Updated](https://img.shields.io/badge/Updated-2026--06--19-success)
+![Updated](https://img.shields.io/badge/Updated-2026--06--26-success)
 
 ## Statistics
 | Region | Domains | Keywords | Total |
