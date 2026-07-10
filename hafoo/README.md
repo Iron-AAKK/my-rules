@@ -1,6 +1,6 @@
 # Hafoo Rules
 
-![Updated](https://img.shields.io/badge/Updated-2026--07--03-success)
+![Updated](https://img.shields.io/badge/Updated-2026--07--10-success)
 
 ## Statistics
 | Region | Domains | Keywords | Total |
