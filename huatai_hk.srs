@@ -2,11 +2,9 @@ DOMAIN-SUFFIX,*.htintl.com
 DOMAIN-SUFFIX,*.htisec.com
 DOMAIN-SUFFIX,*.htsc.com.hk
 DOMAIN-SUFFIX,www.htisec.com
-DOMAIN-SUFFIX,am.htsc.com.hk
 DOMAIN-SUFFIX,api.htisec.com
 DOMAIN-SUFFIX,app.htisec.com
 DOMAIN-SUFFIX,cdn.htisec.com
-DOMAIN-SUFFIX,eqd.htsc.com.hk
 DOMAIN-SUFFIX,htihk.com
 DOMAIN-SUFFIX,htintl.com
 DOMAIN-SUFFIX,htisec.com
@@ -19,4 +17,3 @@ DOMAIN-SUFFIX,www.htisec.com
 DOMAIN-SUFFIX,www.htisec.com.hk
 DOMAIN-SUFFIX,www.htsc.com.hk
 DOMAIN-SUFFIX,zhangle-global.com
-DOMAIN-SUFFIX,zlglobal.htsc.com.hk
