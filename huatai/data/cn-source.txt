@@ -1,3 +1,4 @@
+*.htsc.info
 95597.com
 api.htsc.com.cn
 cdn.htsc.com.cn
@@ -24,4 +25,3 @@ static.htsc.com.cn
 www.htsc.co
 www.htsc.com
 www.htsc.com.cn
-www.htsc.info
