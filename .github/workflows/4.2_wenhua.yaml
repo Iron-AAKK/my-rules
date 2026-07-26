@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # ⭐ 必须：完整克隆，否则无法 pull/rebase
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -34,11 +36,17 @@ jobs:
         run: |
           python wenhua/scripts/generate.py
 
-      - name: Commit and push changes
+      - name: Commit changes
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-
           git add .
           git commit -m "Auto update WenHua domains" || echo "No changes to commit"
-          git push
+
+      - name: Pull latest changes
+        run: |
+          git pull origin main --rebase   # ⭐ 关键：避免 push 冲突
+
+      - name: Push changes
+        run: |
+          git push origin main
