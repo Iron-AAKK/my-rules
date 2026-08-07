@@ -13,5 +13,9 @@ DOMAIN-SUFFIX,push2delay.eastmoney.com
 DOMAIN-SUFFIX,push2fund.eastmoney.com
 DOMAIN-SUFFIX,push2his.eastmoney.com
 DOMAIN-SUFFIX,push2hisappn.eastmoney.com
+DOMAIN-SUFFIX,pushguest.eastmoney.com
+DOMAIN-SUFFIX,pushhisguest.eastmoney.com
+DOMAIN-SUFFIX,pushhislogin.eastmoney.com
+DOMAIN-SUFFIX,pushlogin.eastmoney.com
 DOMAIN-SUFFIX,www.hafoo.com
 DOMAIN-SUFFIX,www.hafoo.com.hk

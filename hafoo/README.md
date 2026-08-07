@@ -1,11 +1,11 @@
 # Hafoo Rules
 
-![Updated](https://img.shields.io/badge/Updated-2026--07--31-success)
+![Updated](https://img.shields.io/badge/Updated-2026--08--07-success)
 
 ## Statistics
 | Region | Domains | Keywords | Total |
 |--------|---------|----------|-------|
-| HK | 17 | 0 | 17 |
+| HK | 21 | 0 | 21 |
 
 ## Files
 - `hafoo_hk.list`
