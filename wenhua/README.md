@@ -1,6 +1,6 @@
 # WenHua Rules
 
-![Updated](https://img.shields.io/badge/Updated-2026--09--11-success)
+![Updated](https://img.shields.io/badge/Updated-2026--09--18-success)
 
 ## Statistics
 | Region | Domains | Keywords | Total |
