@@ -1,5 +1,6 @@
 WT8.wenhua.com.cn
 WT9.wenhua.com.cn
+WenhuaCaijing.com
 app.wenhua.com.cn
 cloudid.wenhua.com.cn
 cxh.wenhua.com.cn
