@@ -1,12 +1,12 @@
 # Huatai Rules
 
-![Updated](https://img.shields.io/badge/Updated-2026--10--09-success)
+![Updated](https://img.shields.io/badge/Updated-2026--10--16-success)
 
 ## Statistics
 | Region | Domains | Keywords | Total |
 |--------|---------|----------|-------|
 | CN | 26 | 0 | 26 |
-| HK | 18 | 0 | 18 |
+| HK | 19 | 0 | 19 |
 | US | 8 | 0 | 8 |
 | SG | 6 | 0 | 6 |
 

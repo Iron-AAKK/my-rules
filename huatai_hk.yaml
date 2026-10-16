@@ -1,6 +1,7 @@
 payload:
   - +.*.htisec.com
   - +.*.htsc.com.hk
+  - +.*.htsc.hk
   - +.www.htisec.com
   - +.api.htisec.com
   - +.app.htisec.com
