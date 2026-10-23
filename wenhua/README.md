@@ -1,11 +1,11 @@
 # WenHua Rules
 
-![Updated](https://img.shields.io/badge/Updated-2026--10--16-success)
+![Updated](https://img.shields.io/badge/Updated-2026--10--23-success)
 
 ## Statistics
 | Region | Domains | Keywords | Total |
 |--------|---------|----------|-------|
-| CN | 20 | 0 | 20 |
+| CN | 43 | 0 | 43 |
 
 ## Files
 - `wenhua_cn.list`
