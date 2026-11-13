@@ -14,4 +14,5 @@ payload:
   - +.edgeservices.bing.com
   - +.github-cloud.s3.amazonaws.com
   - +.githubcopilot.com
+  - +.production-copilot-host-westus.webpubsub.azure.com
   - +.sydney.bing.com
