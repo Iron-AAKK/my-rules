@@ -1,10 +1,7 @@
 *.htintl.com
-*.htisec.com
 *.htsc.com.hk
 *.htsc.hk
-.www.htisec.com
 api.htisec.com
-app.htisec.com
 cdn.htisec.com
 htihk.com
 htintl.com
@@ -13,8 +10,6 @@ htisec.hk
 htsc-service.com
 htsc.com.hk
 htsc.hk
-spw.htisec.com
-www.htisec.com
 www.htisec.com.hk
 www.htsc.com.hk
 zhangle-global.com
